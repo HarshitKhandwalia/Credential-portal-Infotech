@@ -1,9 +1,13 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Shield, Search, Plus, Send, X, Mail, MessageSquare, Smartphone, CheckCircle2, UserPlus, QrCode } from "lucide-react";
+import { 
+  Search, Plus, Send, X, Mail, MessageSquare, 
+  Smartphone, CheckCircle2, UserPlus, QrCode, Edit, Trash2, MoreVertical 
+} from "lucide-react";
 import logo from "./assets/logoEI.jpeg";
 
 const API_BASE_URL = "http://127.0.0.1:8000/api/credentials/";
 
+// Send Invite Modal Component
 function SendInviteModal({ employee, onClose, onSend }) {
   const [useEmail, setUseEmail] = useState(!!employee.email);
   const [useSms, setUseSms] = useState(!employee.email);
@@ -19,6 +23,8 @@ function SendInviteModal({ employee, onClose, onSend }) {
     await onSend(employee.id, { email: useEmail ? email : "", phone: useSms ? phone : "" });
     setSending(false);
   };
+
+  const displayName = employee.name || `${employee.first_name || ""} ${employee.last_name || ""}`.trim();
 
   return (
     <div
@@ -43,7 +49,7 @@ function SendInviteModal({ employee, onClose, onSend }) {
             </div>
             <div>
               <h2 className="text-lg font-semibold leading-tight">Send Credential</h2>
-              <p className="text-sm text-white/80">Recipient: {employee.name}</p>
+              <p className="text-sm text-white/80">Recipient: {displayName}</p>
             </div>
           </div>
         </div>
@@ -59,7 +65,7 @@ function SendInviteModal({ employee, onClose, onSend }) {
                 useEmail ? "border-[#2D5A5D]/30 bg-[#2D5A5D]/5" : "border-slate-200 bg-slate-50"
               }`}
             >
-              <label className="mb-3 flex items-center justify-between cursor-pointer">
+              <label className="mb-3 flex cursor-pointer items-center justify-between">
                 <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
                   <Mail size={16} className="text-[#2D5A5D]" />
                   Email
@@ -93,7 +99,7 @@ function SendInviteModal({ employee, onClose, onSend }) {
                 useSms ? "border-emerald-200 bg-emerald-50/60" : "border-slate-200 bg-slate-50"
               }`}
             >
-              <label className="mb-3 flex items-center justify-between cursor-pointer">
+              <label className="mb-3 flex cursor-pointer items-center justify-between">
                 <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
                   <MessageSquare size={16} className="text-emerald-600" />
                   SMS
@@ -145,6 +151,79 @@ function SendInviteModal({ employee, onClose, onSend }) {
   );
 }
 
+// Edit Employee Modal
+function EditEmployeeModal({ employee, onClose, onSave }) {
+  const [formData, setFormData] = useState({
+    name: employee.name || `${employee.first_name || ""} ${employee.last_name || ""}`.trim(),
+    email: employee.email || "",
+    phone: employee.phone || "",
+    primary_credential: employee.primary_credential || employee.primaryCredential || "QR / NFC",
+    secondary_credential: employee.secondary_credential || employee.secondaryCredential || "SMS",
+  });
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    await onSave(employee.id, formData);
+    setSubmitting(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-lg font-bold text-slate-800 mb-4">Edit Employee Details</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1">Full Name</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#2D5A5D]"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1">Phone Number</label>
+            <input
+              type="text"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#2D5A5D]"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1">Email</label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#2D5A5D]"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="rounded-lg bg-[#2D5A5D] px-4 py-2 text-sm font-semibold text-white hover:bg-[#234749]"
+            >
+              {submitting ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// New Employee Modal
 function NewEmployeeModal({ onClose, onAdd }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -152,21 +231,64 @@ function NewEmployeeModal({ onClose, onAdd }) {
   const [phone, setPhone] = useState("");
   const [secondaryCredential, setSecondaryCredential] = useState("Email");
   const [submitting, setSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState("");
 
   const hasContactMethod = email.trim() !== "" || phone.trim() !== "";
   const canSubmit = firstName.trim() !== "" && lastName.trim() !== "" && hasContactMethod;
 
+  const handleEmailChange = (e) => {
+    const val = e.target.value;
+    setEmail(val);
+    setValidationError("");
+    if (val.trim() && !phone.trim()) {
+      setSecondaryCredential("Email");
+    }
+  };
+
+  const handlePhoneChange = (e) => {
+    const val = e.target.value;
+    setPhone(val);
+    setValidationError("");
+    if (val.trim() && !email.trim()) {
+      setSecondaryCredential("SMS");
+    }
+  };
+
   const handleSubmit = async () => {
-    if (!canSubmit) return;
+    if (!canSubmit || submitting) return;
+
+    const emailTrimmed = email.trim();
+    const phoneTrimmed = phone.trim();
+
+    if (emailTrimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+      setValidationError("Please enter a valid email address.");
+      return;
+    }
+
+    if (phoneTrimmed && !/^\+?[0-9\s\-()]{7,15}$/.test(phoneTrimmed)) {
+      setValidationError("Please enter a valid phone number.");
+      return;
+    }
+
     setSubmitting(true);
-    await onAdd({
-      name: `${firstName.trim()} ${lastName.trim()}`,
-      email: email.trim(),
-      phone: phone.trim(),
-      primaryCredential: "QR",
-      secondaryCredential,
-    });
-    setSubmitting(false);
+    setValidationError("");
+
+    try {
+      await onAdd({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        name: `${firstName.trim()} ${lastName.trim()}`,
+        email: emailTrimmed,
+        phone: phoneTrimmed,
+        primaryCredential: "QR / NFC",
+        secondaryCredential,
+      });
+    } catch (err) {
+      console.error("Failed to save employee:", err);
+      setValidationError("An error occurred while saving. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -197,6 +319,12 @@ function NewEmployeeModal({ onClose, onAdd }) {
         </div>
 
         <div className="px-6 py-6">
+          {validationError && (
+            <div className="mb-4 rounded-lg bg-red-50 p-3 text-xs font-medium text-red-600 border border-red-200">
+              {validationError}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700">
@@ -205,7 +333,7 @@ function NewEmployeeModal({ onClose, onAdd }) {
               <input
                 type="text"
                 value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
+                onChange={(e) => { setFirstName(e.target.value); setValidationError(""); }}
                 placeholder="Enter first name"
                 className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
               />
@@ -217,7 +345,7 @@ function NewEmployeeModal({ onClose, onAdd }) {
               <input
                 type="text"
                 value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
+                onChange={(e) => { setLastName(e.target.value); setValidationError(""); }}
                 placeholder="Enter last name"
                 className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
               />
@@ -226,15 +354,15 @@ function NewEmployeeModal({ onClose, onAdd }) {
 
           <div className="mt-4">
             <label className="mb-1 block text-sm font-medium text-slate-700">
-              Email Address <span className="text-slate-400 text-xs font-normal">(At least Email or Phone required)</span>
+              Email Address <span className="text-xs font-normal text-slate-400">(At least Email or Phone required)</span>
             </label>
             <div className="relative">
               <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@convergint.com"
+                onChange={handleEmailChange}
+                placeholder="name@company.com"
                 className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
               />
             </div>
@@ -242,14 +370,14 @@ function NewEmployeeModal({ onClose, onAdd }) {
 
           <div className="mt-4">
             <label className="mb-1 block text-sm font-medium text-slate-700">
-              Mobile Number <span className="text-slate-400 text-xs font-normal">(At least Email or Phone required)</span>
+              Mobile Number <span className="text-xs font-normal text-slate-400">(At least Email or Phone required)</span>
             </label>
             <div className="relative">
               <Smartphone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={handlePhoneChange}
                 placeholder="+1 (555) 000-0000"
                 className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
               />
@@ -263,10 +391,10 @@ function NewEmployeeModal({ onClose, onAdd }) {
               </label>
               <select
                 disabled
-                value="QR"
+                value="QR / NFC"
                 className="w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-500 outline-none"
               >
-                <option value="QR">QR</option>
+                <option value="QR / NFC">QR / NFC</option>
               </select>
             </div>
             <div>
@@ -306,102 +434,16 @@ function NewEmployeeModal({ onClose, onAdd }) {
   );
 }
 
-function QrPassModal({ employee, onClose }) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-sm overflow-hidden rounded-2xl bg-white p-6 shadow-2xl text-center"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex justify-end">
-          <button
-            onClick={onClose}
-            className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-          >
-            <X size={20} />
-          </button>
-        </div>
-        <h3 className="text-lg font-bold text-slate-800">{employee.name}</h3>
-        <p className="text-xs text-slate-400 mt-1">Digital Access Pass</p>
-        <div className="my-6 flex justify-center">
-          <div className="rounded-xl border-2 border-slate-900 p-4 bg-white shadow-inner">
-            <QrCode size={140} className="text-slate-800" />
-          </div>
-        </div>
-        <p className="text-xs text-slate-500 font-mono">ID: PASS-{employee.id}89234</p>
-      </div>
-    </div>
-  );
-}
-
-function EmployeeCard({ employee, onInviteClick }) {
-  const buttonLabel = employee.status === "not_invited" ? "Send Credential" : "Resend Credential";
-  
-  // Read either Django API snakes or JS camelCase properties
-  const displayPrimary = employee.primary_credential || employee.primaryCredential || "QR / NFC";
-  const displaySecondary = employee.secondary_credential || employee.secondaryCredential || "Email";
-  const displayCreated = employee.formatted_created_at || employee.createdAt || "N/A";
-
-  return (
-    <div className="flex flex-col justify-between rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:shadow-md">
-      <div>
-        <h3 className="text-lg font-bold text-slate-800">{employee.name}</h3>
-        
-        <div className="mt-4 space-y-2 text-xs">
-          <div className="flex justify-between border-b border-slate-100 pb-1.5">
-            <span className="font-medium text-slate-400">Phone:</span>
-            <span className="font-semibold text-slate-700">{employee.phone || "N/A"}</span>
-          </div>
-
-          <div className="flex justify-between border-b border-slate-100 pb-1.5">
-            <span className="font-medium text-slate-400">Email:</span>
-            <span className="font-semibold text-slate-700 truncate max-w-[150px]" title={employee.email}>
-              {employee.email || "N/A"}
-            </span>
-          </div>
-
-          <div className="flex justify-between border-b border-slate-100 pb-1.5">
-            <span className="font-medium text-slate-400">Primary Credential:</span>
-            <span className="font-semibold text-slate-700">{displayPrimary}</span>
-          </div>
-
-          <div className="flex justify-between border-b border-slate-100 pb-1.5">
-            <span className="font-medium text-slate-400">Secondary Credential:</span>
-            <span className="font-semibold text-slate-700">{displaySecondary}</span>
-          </div>
-
-          <div className="flex justify-between pb-1">
-            <span className="font-medium text-slate-400">Sent at:</span>
-            <span className="font-semibold text-slate-700">{displayCreated}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-5">
-        <button
-          onClick={() => onInviteClick(employee)}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#2D5A5D] py-2 text-xs font-semibold text-white transition hover:bg-[#234749]"
-        >
-          <Send size={14} />
-          {buttonLabel}
-        </button>
-      </div>
-    </div>
-  );
-}
-
+// Main Employee Portal Component
 export default function EmployeePortal() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [passEmployee, setPassEmployee] = useState(null);
+  const [editingEmployee, setEditingEmployee] = useState(null);
   const [showNewEmployeeModal, setShowNewEmployeeModal] = useState(false);
+  const [activeMenuId, setActiveMenuId] = useState(null);
 
-  // Fetch employees from Django API
   const fetchEmployees = async () => {
     try {
       const response = await fetch(API_BASE_URL);
@@ -421,14 +463,14 @@ export default function EmployeePortal() {
   }, []);
 
   const filteredEmployees = useMemo(() => {
-    return employees.filter((e) =>
-      (e.name || "").toLowerCase().includes(search.toLowerCase())
-    );
+    return employees.filter((e) => {
+      const fullName = e.name || `${e.first_name || ""} ${e.last_name || ""}`.trim();
+      return fullName.toLowerCase().includes(search.toLowerCase());
+    });
   }, [employees, search]);
 
   const handleSendInvite = async (id, updatedDetails) => {
     try {
-      // POST payload back to backend
       const response = await fetch(`${API_BASE_URL}${id}/send/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -441,7 +483,6 @@ export default function EmployeePortal() {
           prev.map((e) => (e.id === id ? updatedRecord : e))
         );
       } else {
-        // Fallback local update if endpoint isn't fully implemented
         setEmployees((prev) =>
           prev.map((e) =>
             e.id === id
@@ -465,35 +506,33 @@ export default function EmployeePortal() {
   const handleAddEmployee = async (formData, e) => {
     if (e && e.preventDefault) e.preventDefault();
 
-    // 1. Regex definitions for validation
     const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     const PHONE_REGEX = /^\+?[1-9]\d{6,14}$/;
 
-    // 2. Normalize inputs
-    const normalizedEmail = (formData.email || "").trim().toLowerCase();
-    const normalizedPhone = (formData.phone || "").replace(/[\s\-\(\)]/g, "");
+    const emailInput = (formData.email || "").trim().toLowerCase();
+    const phoneInput = (formData.phone || "").replace(/[\s\-\(\)]/g, "");
 
-    // 3. Frontend Validation Checks
-    if (normalizedEmail && !EMAIL_REGEX.test(normalizedEmail)) {
+    if (emailInput && !EMAIL_REGEX.test(emailInput)) {
       alert("Please enter a valid email address.");
       return;
     }
 
-    if (normalizedPhone && !PHONE_REGEX.test(normalizedPhone)) {
+    if (phoneInput && !PHONE_REGEX.test(phoneInput)) {
       alert("Please enter a valid phone number (7–15 digits).");
       return;
     }
 
-    if (!normalizedEmail && !normalizedPhone) {
+    if (!emailInput && !phoneInput) {
       alert("At least one contact method (Email or Phone) is required.");
       return;
     }
 
-    // 4. Send normalized data to backend
     const payload = {
       name: formData.name,
-      email: normalizedEmail,
-      phone: normalizedPhone,
+      first_name: formData.firstName,
+      last_name: formData.lastName,
+      email: emailInput || null,
+      phone: phoneInput || null,
       primary_credential: formData.primaryCredential || "QR / NFC",
       secondary_credential: formData.secondaryCredential || "Email",
       status: "not_invited",
@@ -520,12 +559,52 @@ export default function EmployeePortal() {
     }
   };
 
+  const handleUpdateEmployee = async (id, updatedFields) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}${id}/`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedFields),
+      });
+
+      if (response.ok) {
+        const updatedData = await response.json();
+        setEmployees((prev) =>
+          prev.map((emp) => (emp.id === id ? updatedData : emp))
+        );
+        setEditingEmployee(null);
+      } else {
+        alert("Failed to update record.");
+      }
+    } catch (error) {
+      console.error("Update error:", error);
+    }
+  };
+
+  const handleDeleteEmployee = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this record?")) return;
+    try {
+      const response = await fetch(`${API_BASE_URL}${id}/`, {
+        method: "DELETE",
+      });
+
+      if (response.ok || response.status === 204) {
+        setEmployees((prev) => prev.filter((emp) => emp.id !== id));
+      } else {
+        alert("Failed to delete record.");
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#EEF4F4]">
-      <header className="border-b border-slate-100 bg-white">
+      {/* Header */}
+      <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="Enterprise-Infotech Logo" className="h-16 w-auto object-contain" />
+            <img src={logo} alt="Enterprise-Infotech Logo" className="h-14 w-auto object-contain" />
           </div>
           <div className="relative hidden max-w-sm flex-1 sm:block">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -546,6 +625,7 @@ export default function EmployeePortal() {
         </div>
       </header>
 
+      {/* Main Content Area */}
       <main className="mx-auto max-w-7xl px-6 py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-800">Credential Portal</h1>
@@ -560,19 +640,123 @@ export default function EmployeePortal() {
             No employees match this search.
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {filteredEmployees.map((employee) => (
-              <EmployeeCard
-                key={employee.id}
-                employee={employee}
-                onInviteClick={setSelectedEmployee}
-                onViewPass={setPassEmployee}
-              />
-            ))}
+          /* TABLE VIEW CONTAINER */
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-left text-sm text-slate-700">
+                <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  <tr>
+                    <th scope="col" className="px-6 py-4 border-r border-slate-100">Name</th>
+                    <th scope="col" className="px-6 py-4 border-r border-slate-100">Phone number</th>
+                    <th scope="col" className="px-6 py-4 border-r border-slate-100">Email</th>
+                    <th scope="col" className="px-6 py-4 border-r border-slate-100">Primary credential</th>
+                    <th scope="col" className="px-6 py-4 border-r border-slate-100">Secondary Credential</th>
+                    <th scope="col" className="px-6 py-4 border-r border-slate-100">Sent At</th>
+                    <th scope="col" className="px-6 py-4 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredEmployees.map((employee) => {
+                    const displayName = employee.name || `${employee.first_name || ""} ${employee.last_name || ""}`.trim();
+                    const primary = employee.primary_credential || employee.primaryCredential || "QR / NFC";
+                    const secondary = employee.secondary_credential || employee.secondaryCredential || "Email";
+                    const sentAt = employee.formatted_created_at || employee.createdAt || "N/A";
+                    const buttonLabel = employee.status === "not_invited" ? "Send Credential" : "Resend Credential";
+
+                    return (
+                      <tr key={employee.id} className="hover:bg-slate-50/80 transition-colors">
+                        {/* Name with Avatar */}
+                        <td className="px-6 py-4 font-medium text-slate-900 border-r border-slate-100 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#2D5A5D]/10 text-xs font-bold text-[#2D5A5D]">
+                              {displayName.charAt(0).toUpperCase()}
+                            </div>
+                            <span>{displayName}</span>
+                          </div>
+                        </td>
+
+                        {/* Phone Number */}
+                        <td className="px-6 py-4 border-r border-slate-100 whitespace-nowrap text-slate-600">
+                          {employee.phone || "N/A"}
+                        </td>
+
+                        {/* Email */}
+                        <td className="px-6 py-4 border-r border-slate-100 whitespace-nowrap text-slate-600">
+                          {employee.email || "N/A"}
+                        </td>
+
+                        {/* Primary Credential */}
+                        <td className="px-6 py-4 border-r border-slate-100 whitespace-nowrap text-slate-600">
+                          {primary}
+                        </td>
+
+                        {/* Secondary Credential */}
+                        <td className="px-6 py-4 border-r border-slate-100 whitespace-nowrap text-slate-600">
+                          {secondary}
+                        </td>
+
+                        {/* Sent At */}
+                        <td className="px-6 py-4 border-r border-slate-100 whitespace-nowrap text-slate-500 text-xs">
+                          {sentAt}
+                        </td>
+
+                        {/* Actions Column */}
+                        <td className="px-6 py-4 text-center whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-2">
+                            {/* Send Credential Button */}
+                            <button
+                              onClick={() => setSelectedEmployee(employee)}
+                              className="flex items-center gap-1.5 rounded-lg bg-[#2D5A5D] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#234749]"
+                            >
+                              <Send size={13} />
+                              {buttonLabel}
+                            </button>
+
+                            {/* Dropdown Options for Edit / Delete */}
+                            <div className="relative">
+                              <button
+                                onClick={() => setActiveMenuId(activeMenuId === employee.id ? null : employee.id)}
+                                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                              >
+                                <MoreVertical size={16} />
+                              </button>
+
+                              {activeMenuId === employee.id && (
+                                <div className="absolute right-0 mt-1 w-32 rounded-lg border border-slate-100 bg-white py-1 shadow-lg z-20">
+                                  <button
+                                    onClick={() => {
+                                      setActiveMenuId(null);
+                                      setEditingEmployee(employee);
+                                    }}
+                                    className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                  >
+                                    <Edit size={14} /> Edit
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setActiveMenuId(null);
+                                      handleDeleteEmployee(employee.id);
+                                    }}
+                                    className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
+                                  >
+                                    <Trash2 size={14} /> Delete
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </main>
 
+      {/* Modals */}
       {selectedEmployee && (
         <SendInviteModal
           employee={selectedEmployee}
@@ -581,10 +765,11 @@ export default function EmployeePortal() {
         />
       )}
 
-      {passEmployee && (
-        <QrPassModal
-          employee={passEmployee}
-          onClose={() => setPassEmployee(null)}
+      {editingEmployee && (
+        <EditEmployeeModal
+          employee={editingEmployee}
+          onClose={() => setEditingEmployee(null)}
+          onSave={handleUpdateEmployee}
         />
       )}
 
