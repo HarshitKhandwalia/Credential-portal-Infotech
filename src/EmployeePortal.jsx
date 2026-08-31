@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import logo from "./assets/logoEI.jpeg";
 
-const API_BASE_URL = "http://127.0.0.1:8000/api/credentials/";
+const API_BASE_URL = "http://127.0.0.1:8003/api/credentials/";
 
 // Send Invite Modal Component
 function SendInviteModal({ employee, onClose, onSend }) {
@@ -20,8 +20,11 @@ function SendInviteModal({ employee, onClose, onSend }) {
   const handleSend = async () => {
     if (!canSend) return;
     setSending(true);
-    await onSend(employee.id, { email: useEmail ? email : "", phone: useSms ? phone : "" });
-    setSending(false);
+    try {
+      await onSend(employee.id, { email: useEmail ? email : "", phone: useSms ? phone : "" });
+    } finally {
+      setSending(false);
+    }
   };
 
   const displayName = employee.name || `${employee.first_name || ""} ${employee.last_name || ""}`.trim();
@@ -155,9 +158,10 @@ function SendInviteModal({ employee, onClose, onSend }) {
 function EditEmployeeModal({ employee, onClose, onSave }) {
   const [formData, setFormData] = useState({
     name: employee.name || `${employee.first_name || ""} ${employee.last_name || ""}`.trim(),
+    membership_id: employee.membership_id || employee.membershipId || "",
     email: employee.email || "",
     phone: employee.phone || "",
-    primary_credential: employee.primary_credential || employee.primaryCredential || "QR / NFC",
+    primary_credential: employee.primary_credential || employee.primaryCredential || "QR",
     secondary_credential: employee.secondary_credential || employee.secondaryCredential || "SMS",
   });
   const [submitting, setSubmitting] = useState(false);
@@ -180,6 +184,16 @@ function EditEmployeeModal({ employee, onClose, onSave }) {
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#2D5A5D]"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1">Membership ID</label>
+            <input
+              type="text"
+              value={formData.membership_id}
+              onChange={(e) => setFormData({ ...formData, membership_id: e.target.value })}
+              placeholder="MEM-67890"
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#2D5A5D]"
             />
           </div>
@@ -227,6 +241,7 @@ function EditEmployeeModal({ employee, onClose, onSave }) {
 function NewEmployeeModal({ onClose, onAdd }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [membershipId, setMembershipId] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [secondaryCredential, setSecondaryCredential] = useState("Email");
@@ -278,9 +293,10 @@ function NewEmployeeModal({ onClose, onAdd }) {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         name: `${firstName.trim()} ${lastName.trim()}`,
+        membershipId: membershipId.trim(),
         email: emailTrimmed,
         phone: phoneTrimmed,
-        primaryCredential: "QR / NFC",
+        primaryCredential: "QR",
         secondaryCredential,
       });
     } catch (err) {
@@ -354,7 +370,20 @@ function NewEmployeeModal({ onClose, onAdd }) {
 
           <div className="mt-4">
             <label className="mb-1 block text-sm font-medium text-slate-700">
-              Email Address <span className="text-xs font-normal text-slate-400">(At least Email or Phone required)</span>
+              Membership ID
+            </label>
+            <input
+              type="text"
+              value={membershipId}
+              onChange={(e) => { setMembershipId(e.target.value); setValidationError(""); }}
+              placeholder="MEM-67890"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+            />
+          </div>
+
+          <div className="mt-4">
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+              Email Address 
             </label>
             <div className="relative">
               <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -370,7 +399,7 @@ function NewEmployeeModal({ onClose, onAdd }) {
 
           <div className="mt-4">
             <label className="mb-1 block text-sm font-medium text-slate-700">
-              Mobile Number <span className="text-xs font-normal text-slate-400">(At least Email or Phone required)</span>
+              Mobile Number 
             </label>
             <div className="relative">
               <Smartphone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -382,6 +411,7 @@ function NewEmployeeModal({ onClose, onAdd }) {
                 className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
               />
             </div>
+          <span className="text-xs font-normal text-slate-400"><span className="text-red-500">*</span>At least one is required, Email or Phone</span>
           </div>
 
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -391,15 +421,15 @@ function NewEmployeeModal({ onClose, onAdd }) {
               </label>
               <select
                 disabled
-                value="QR / NFC"
+                value="QR"
                 className="w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-500 outline-none"
               >
-                <option value="QR / NFC">QR / NFC</option>
+                <option value="QR">QR</option>
               </select>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700">
-                Secondary Credential
+                MFA
               </label>
               <select
                 value={secondaryCredential}
@@ -470,36 +500,68 @@ export default function EmployeePortal() {
   }, [employees, search]);
 
   const handleSendInvite = async (id, updatedDetails) => {
+    const employee = employees.find((e) => e.id === id);
+    if (!employee) {
+      alert("Employee record not found.");
+      return false;
+    }
+
+    const displayName =
+      employee.name || `${employee.first_name || ""} ${employee.last_name || ""}`.trim();
+
+    const payload = {
+      name: displayName,
+      membership_id: employee.membership_id || employee.membershipId || "",
+      email: updatedDetails.email || null,
+      phone: updatedDetails.phone || null,
+      primary_credential: employee.primary_credential || employee.primaryCredential || "QR",
+      secondary_credential: employee.secondary_credential || employee.secondaryCredential || "Email",
+    };
+
     try {
-      const response = await fetch(`${API_BASE_URL}${id}/send/`, {
+      const response = await fetch(`${API_BASE_URL}${id}/generate-qr-passes/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedDetails),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
         const updatedRecord = await response.json();
         setEmployees((prev) =>
-          prev.map((e) => (e.id === id ? updatedRecord : e))
-        );
-      } else {
-        setEmployees((prev) =>
           prev.map((e) =>
             e.id === id
               ? {
                   ...e,
-                  status: "invite_sent",
+                  ...updatedRecord,
+                  status: updatedRecord.status || "invite_sent",
                   email: updatedDetails.email || e.email,
                   phone: updatedDetails.phone || e.phone,
                 }
               : e
           )
         );
+        setSelectedEmployee(null);
+        alert("Credential sent successfully!");
+        return true;
       }
+
+      let errorMessage = "Failed to send credential.";
+      try {
+        const errorData = await response.json();
+        errorMessage =
+          errorData.detail ||
+          errorData.message ||
+          errorData.error ||
+          JSON.stringify(errorData);
+      } catch {
+        errorMessage = `Failed to send credential (${response.status}).`;
+      }
+      alert(errorMessage);
+      return false;
     } catch (error) {
       console.error("Error triggering invite:", error);
-    } finally {
-      setSelectedEmployee(null);
+      alert("Failed to send credential. Please check your connection.");
+      return false;
     }
   };
 
@@ -531,9 +593,10 @@ export default function EmployeePortal() {
       name: formData.name,
       first_name: formData.firstName,
       last_name: formData.lastName,
+      membership_id: (formData.membershipId || "").trim(),
       email: emailInput || null,
       phone: phoneInput || null,
-      primary_credential: formData.primaryCredential || "QR / NFC",
+      primary_credential: formData.primaryCredential || "QR",
       secondary_credential: formData.secondaryCredential || "Email",
       status: "not_invited",
     };
@@ -650,7 +713,7 @@ export default function EmployeePortal() {
                     <th scope="col" className="px-6 py-4 border-r border-slate-100">Phone number</th>
                     <th scope="col" className="px-6 py-4 border-r border-slate-100">Email</th>
                     <th scope="col" className="px-6 py-4 border-r border-slate-100">Primary credential</th>
-                    <th scope="col" className="px-6 py-4 border-r border-slate-100">Secondary Credential</th>
+                    <th scope="col" className="px-6 py-4 border-r border-slate-100">MFA</th>
                     <th scope="col" className="px-6 py-4 border-r border-slate-100">Sent At</th>
                     <th scope="col" className="px-6 py-4 text-center">Actions</th>
                   </tr>
@@ -658,7 +721,7 @@ export default function EmployeePortal() {
                 <tbody className="divide-y divide-slate-100">
                   {filteredEmployees.map((employee) => {
                     const displayName = employee.name || `${employee.first_name || ""} ${employee.last_name || ""}`.trim();
-                    const primary = employee.primary_credential || employee.primaryCredential || "QR / NFC";
+                    const primary = employee.primary_credential || employee.primaryCredential || "QR";
                     const secondary = employee.secondary_credential || employee.secondaryCredential || "Email";
                     const sentAt = employee.formatted_created_at || employee.createdAt || "N/A";
                     const buttonLabel = employee.status === "not_invited" ? "Send Credential" : "Resend Credential";
