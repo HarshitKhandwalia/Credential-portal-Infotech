@@ -4,8 +4,7 @@ import {
   Smartphone, CheckCircle2, UserPlus, QrCode, Edit, Trash2, MoreVertical 
 } from "lucide-react";
 import logo from "./assets/logoEI.jpeg";
-
-const API_BASE_URL = "http://127.0.0.1:8003/api/credentials/";
+import { API_BASE_URL } from "./config";
 
 // Send Invite Modal Component
 function SendInviteModal({ employee, onClose, onSend }) {
@@ -506,34 +505,49 @@ export default function EmployeePortal() {
       return false;
     }
 
-    const displayName =
-      employee.name || `${employee.first_name || ""} ${employee.last_name || ""}`.trim();
-
-    const payload = {
-      name: displayName,
-      membership_id: employee.membership_id || employee.membershipId || "",
-      email: updatedDetails.email || null,
-      phone: updatedDetails.phone || null,
-      primary_credential: employee.primary_credential || employee.primaryCredential || "QR",
-      secondary_credential: employee.secondary_credential || employee.secondaryCredential || "Email",
-    };
-
     try {
+      if (updatedDetails.email || updatedDetails.phone) {
+        const sendResponse = await fetch(`${API_BASE_URL}${id}/send/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: updatedDetails.email || null,
+            phone: updatedDetails.phone || null,
+          }),
+        });
+
+        if (!sendResponse.ok) {
+          let sendError = "Failed to update contact details.";
+          try {
+            const errorData = await sendResponse.json();
+            sendError =
+              errorData.detail ||
+              errorData.message ||
+              errorData.error ||
+              sendError;
+          } catch {
+            sendError = `Failed to update contact details (${sendResponse.status}).`;
+          }
+          alert(sendError);
+          return false;
+        }
+      }
+
       const response = await fetch(`${API_BASE_URL}${id}/generate-qr-passes/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({}),
       });
 
+      const responseData = await response.json().catch(() => ({}));
+
       if (response.ok) {
-        const updatedRecord = await response.json();
         setEmployees((prev) =>
           prev.map((e) =>
             e.id === id
               ? {
                   ...e,
-                  ...updatedRecord,
-                  status: updatedRecord.status || "invite_sent",
+                  status: "invite_sent",
                   email: updatedDetails.email || e.email,
                   phone: updatedDetails.phone || e.phone,
                 }
@@ -541,21 +555,27 @@ export default function EmployeePortal() {
           )
         );
         setSelectedEmployee(null);
-        alert("Credential sent successfully!");
+        alert(
+          responseData.email_sent
+            ? "Wallet links sent successfully!"
+            : "Wallet links generated, but the email could not be sent."
+        );
         return true;
       }
 
-      let errorMessage = "Failed to send credential.";
-      try {
-        const errorData = await response.json();
-        errorMessage =
-          errorData.detail ||
-          errorData.message ||
-          errorData.error ||
-          JSON.stringify(errorData);
-      } catch {
-        errorMessage = `Failed to send credential (${response.status}).`;
+      if (response.status === 502 && responseData.wallet_urls) {
+        alert(
+          responseData.error ||
+            "Email delivery failed, but wallet links were generated. Please share the links manually."
+        );
+        return false;
       }
+
+      const errorMessage =
+        responseData.detail ||
+        responseData.message ||
+        responseData.error ||
+        `Failed to send credential (${response.status}).`;
       alert(errorMessage);
       return false;
     } catch (error) {
