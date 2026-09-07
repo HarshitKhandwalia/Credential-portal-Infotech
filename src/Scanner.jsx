@@ -7,8 +7,7 @@ import {
   QrCode,
   Loader,
 } from "lucide-react";
-
-const API_BASE_URL = "/api";
+import { API_BASE_URL } from "./config";
 
 export default function Scanner({ onBack }) {
   const [scanResult, setScanResult] = useState(null);
@@ -30,7 +29,7 @@ export default function Scanner({ onBack }) {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/credentials/scan/`, {
+      const response = await fetch(`${API_BASE_URL}scan/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
