@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { 
   Search, Plus, Send, X, Mail, MessageSquare, 
-  Smartphone, CheckCircle2, UserPlus, QrCode, Edit, Trash2, MoreVertical 
+  Smartphone, CheckCircle2, UserPlus, Edit, Trash2, 
+  MoreVertical, ChevronDown, ChevronUp 
 } from "lucide-react";
 import logo from "./assets/logoEI.jpeg";
 import { API_BASE_URL, API_ROOT } from "./config";
@@ -477,7 +478,7 @@ function NewEmployeeModal({ chapters, onClose, onAdd }) {
                 className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
               />
             </div>
-          <span className="text-xs font-normal text-slate-400"><span className="text-red-500">*</span>At least one is required, Email or Phone</span>
+            <span className="text-xs font-normal text-slate-400"><span className="text-red-500">*</span>At least one is required, Email or Phone</span>
           </div>
 
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -539,7 +540,8 @@ export default function EmployeePortal() {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [showNewEmployeeModal, setShowNewEmployeeModal] = useState(false);
-  const [activeMenuId, setActiveMenuId] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [expandedDetailsId, setExpandedDetailsId] = useState(null);
 
   const fetchEmployees = async () => {
     try {
@@ -788,18 +790,31 @@ export default function EmployeePortal() {
           </div>
           <button
             onClick={() => setShowNewEmployeeModal(true)}
-            className="flex items-center gap-2 rounded-lg bg-[#2D5A5D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#234749]"
+            className="flex items-center gap-2 rounded-lg bg-[#2D5A5D] px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white transition hover:bg-[#234749]"
           >
             <Plus size={16} />
-            New Invite
+            <span>New Invite</span>
           </button>
+        </div>
+
+        {/* Mobile Search Bar */}
+        <div className="px-4 pb-4 sm:hidden">
+          <div className="relative w-full">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search User Credentials..."
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none focus:border-[#2D5A5D] focus:ring-2 focus:ring-[#2D5A5D]/20"
+            />
+          </div>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="mx-auto max-w-7xl px-6 py-8">
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-800">Credential Portal</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">Credential Portal</h1>
         </div>
 
         {loading ? (
@@ -811,11 +826,133 @@ export default function EmployeePortal() {
             No employees match this search.
           </div>
         ) : (
-          /* TABLE VIEW CONTAINER */
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left text-sm text-slate-700">
-                <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <div>
+            {/* MOBILE CARD VIEW (Shown strictly below 768px) */}
+            <div className="space-y-4 md:hidden">
+              {filteredEmployees.map((employee) => {
+                const displayName = employee.name || `${employee.first_name || ""} ${employee.last_name || ""}`.trim();
+                const primary = employee.primary_credential || employee.primaryCredential || "QR";
+                const secondary = employee.secondary_credential || employee.secondaryCredential || "Email";
+                const sentAt = employee.formatted_created_at || employee.createdAt || "N/A";
+                const buttonLabel = employee.status === "not_invited" ? "Send Credential" : "Resend Credential";
+                const isExpanded = expandedDetailsId === employee.id;
+
+                return (
+                  <div key={employee.id} className="relative rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    {/* Card Header: Avatar, Name & Actions Dropdown */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2D5A5D]/10 text-sm font-bold text-[#2D5A5D]">
+                          {displayName.charAt(0).toUpperCase()}
+                        </div>
+                        <h3 className="font-semibold text-slate-800 text-base leading-snug">{displayName}</h3>
+                      </div>
+
+                      {/* Action Menu (Edit / Delete) */}
+                      <div className="relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuId(openMenuId === employee.id ? null : employee.id);
+                          }}
+                          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+                          title="More Actions"
+                        >
+                          <MoreVertical size={18} />
+                        </button>
+
+                        {openMenuId === employee.id && (
+                          <>
+                            <div 
+                              className="fixed inset-0 z-10" 
+                              onClick={() => setOpenMenuId(null)} 
+                            />
+                            
+                            <div className="absolute right-0 top-10 z-20 w-40 rounded-xl border border-slate-100 bg-white py-1 shadow-lg text-left">
+                              <button
+                                onClick={() => {
+                                  setEditingEmployee(employee);
+                                  setOpenMenuId(null);
+                                }}
+                                className="flex w-full items-center gap-2 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                              >
+                                <Edit size={14} className="text-slate-500" />
+                                Edit
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  handleDeleteEmployee(employee.id);
+                                  setOpenMenuId(null);
+                                }}
+                                className="flex w-full items-center gap-2 px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
+                              >
+                                <Trash2 size={14} />
+                                Delete
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Expandable Details Section */}
+                    {isExpanded && (
+                      <div className="mt-4 space-y-2 rounded-lg bg-slate-50 p-3 text-xs border border-slate-100 text-slate-600">
+                        <div className="flex justify-between">
+                          <span className="font-medium text-slate-400">Chapter:</span>
+                          <span className="font-semibold text-slate-700">{employee.chapter_name || "—"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-slate-400">Phone:</span>
+                          <span className="font-semibold text-slate-700">{employee.phone || "N/A"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-slate-400">Email:</span>
+                          <span className="font-semibold text-slate-700">{employee.email || "N/A"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-slate-400">Primary Credential:</span>
+                          <span className="font-semibold text-slate-700">{primary}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-slate-400">MFA:</span>
+                          <span className="font-semibold text-slate-700">{secondary}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-slate-400">Sent At:</span>
+                          <span className="font-semibold text-slate-700">{sentAt}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Card Footer: Show More Toggle & Send Button */}
+                    <div className="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
+                      <button
+                        onClick={() => setExpandedDetailsId(isExpanded ? null : employee.id)}
+                        className="flex items-center gap-1 text-xs font-medium text-[#2D5A5D] hover:underline"
+                      >
+                        <span>{isExpanded ? "Hide details" : "More details"}</span>
+                        {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                      </button>
+
+                      <button
+                        onClick={() => setSelectedEmployee(employee)}
+                        className="flex items-center gap-1.5 rounded-full bg-[#2D5A5D] px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#234749]"
+                      >
+                        <Send size={13} />
+                        <span>{buttonLabel}</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* DESKTOP & TABLET TABLE VIEW */}
+            <div className="hidden md:block rounded-xl border border-slate-200 bg-white shadow-sm">
+              <table className="w-full table-fixed border-collapse text-left text-xs lg:text-sm text-slate-700">
+                <thead className="border-b border-slate-200 bg-slate-50 font-semibold uppercase tracking-wider text-slate-500">
                   <tr>
                     <th scope="col" className="px-6 py-4 border-r border-slate-100">Name</th>
                     <th scope="col" className="px-6 py-4 border-r border-slate-100">Chapter</th>
@@ -828,98 +965,104 @@ export default function EmployeePortal() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredEmployees.map((employee) => {
+                  {filteredEmployees.map((employee, index) => {
                     const displayName = employee.name || `${employee.first_name || ""} ${employee.last_name || ""}`.trim();
                     const primary = employee.primary_credential || employee.primaryCredential || "QR";
                     const secondary = employee.secondary_credential || employee.secondaryCredential || "Email";
                     const sentAt = employee.formatted_created_at || employee.createdAt || "N/A";
                     const buttonLabel = employee.status === "not_invited" ? "Send Credential" : "Resend Credential";
+                    
+                    const isLastRow = index === filteredEmployees.length - 1;
 
                     return (
                       <tr key={employee.id} className="hover:bg-slate-50/80 transition-colors">
-                        {/* Name with Avatar */}
-                        <td className="px-6 py-4 font-medium text-slate-900 border-r border-slate-100 whitespace-nowrap">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#2D5A5D]/10 text-xs font-bold text-[#2D5A5D]">
+                        <td className="px-2 lg:px-3 py-3.5 font-medium text-slate-900 border-r border-slate-100 truncate">
+                          <div className="flex items-center gap-2 truncate">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2D5A5D]/10 text-xs font-bold text-[#2D5A5D]">
                               {displayName.charAt(0).toUpperCase()}
                             </div>
-                            <span>{displayName}</span>
+                            <span className="truncate">{displayName}</span>
                           </div>
                         </td>
 
-                        <td className="px-6 py-4 border-r border-slate-100 whitespace-nowrap text-slate-600">
+                        <td
+                          className="px-2 lg:px-3 py-3.5 border-r border-slate-100 text-slate-600 truncate"
+                          title={employee.chapter_name || undefined}
+                        >
                           {employee.chapter_name || "—"}
                         </td>
 
                         {/* Phone Number */}
-                        <td className="px-6 py-4 border-r border-slate-100 whitespace-nowrap text-slate-600">
+                        <td className="px-2 lg:px-3 py-3.5 border-r border-slate-100 text-slate-600 truncate">
                           {employee.phone || "N/A"}
                         </td>
-
-                        {/* Email */}
-                        <td className="px-6 py-4 border-r border-slate-100 whitespace-nowrap text-slate-600">
+                        <td className="px-2 lg:px-3 py-3.5 border-r border-slate-100 text-slate-600 truncate" title={employee.email}>
                           {employee.email || "N/A"}
                         </td>
-
-                        {/* Primary Credential */}
-                        <td className="px-6 py-4 border-r border-slate-100 whitespace-nowrap text-slate-600">
+                        <td className="px-2 lg:px-3 py-3.5 border-r border-slate-100 text-slate-600 text-center truncate">
                           {primary}
                         </td>
-
-                        {/* Secondary Credential */}
-                        <td className="px-6 py-4 border-r border-slate-100 whitespace-nowrap text-slate-600">
+                        <td className="px-2 lg:px-3 py-3.5 border-r border-slate-100 text-slate-600 text-center truncate">
                           {secondary}
                         </td>
-
-                        {/* Sent At */}
-                        <td className="px-6 py-4 border-r border-slate-100 whitespace-nowrap text-slate-500 text-xs">
+                        <td className="px-2 lg:px-3 py-3.5 border-r border-slate-100 text-slate-500 text-xs text-center truncate" title={sentAt}>
                           {sentAt}
                         </td>
-
-                        {/* Actions Column */}
-                        <td className="px-6 py-4 text-center whitespace-nowrap">
-                          <div className="flex items-center justify-center gap-2">
-                            {/* Send Credential Button */}
+                        <td className="px-2 lg:px-3 py-3.5 text-center relative">
+                          <div className="flex items-center justify-center gap-1.5">
                             <button
                               onClick={() => setSelectedEmployee(employee)}
-                              className="flex items-center gap-1.5 rounded-lg bg-[#2D5A5D] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#234749]"
+                              className="flex items-center gap-1 rounded-full bg-[#2D5A5D] px-2.5 py-1.5 text-[11px] lg:text-xs font-semibold text-white shadow-sm transition hover:bg-[#234749] shrink-0"
                             >
-                              <Send size={13} />
-                              {buttonLabel}
+                              <Send size={12} />
+                              <span className="whitespace-nowrap">{buttonLabel}</span>
                             </button>
 
-                            {/* Dropdown Options for Edit / Delete */}
-                            <div className="relative">
-                              <button
-                                onClick={() => setActiveMenuId(activeMenuId === employee.id ? null : employee.id)}
-                                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                              >
-                                <MoreVertical size={16} />
-                              </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenMenuId(openMenuId === employee.id ? null : employee.id);
+                              }}
+                              className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition shrink-0"
+                              title="More Actions"
+                            >
+                              <MoreVertical size={16} />
+                            </button>
 
-                              {activeMenuId === employee.id && (
-                                <div className="absolute right-0 mt-1 w-32 rounded-lg border border-slate-100 bg-white py-1 shadow-lg z-20">
+                            {openMenuId === employee.id && (
+                              <>
+                                <div 
+                                  className="fixed inset-0 z-30" 
+                                  onClick={() => setOpenMenuId(null)} 
+                                />
+                                
+                                <div className={`absolute right-2 z-40 w-40 rounded-xl border border-slate-200 bg-white py-1 shadow-xl text-left ${
+                                  isLastRow ? "bottom-full mb-1" : "top-full mt-1"
+                                }`}>
                                   <button
                                     onClick={() => {
-                                      setActiveMenuId(null);
                                       setEditingEmployee(employee);
+                                      setOpenMenuId(null);
                                     }}
-                                    className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                    className="flex w-full items-center gap-2 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
                                   >
-                                    <Edit size={14} /> Edit
+                                    <Edit size={14} className="text-slate-500" />
+                                    Edit
                                   </button>
+
                                   <button
                                     onClick={() => {
-                                      setActiveMenuId(null);
                                       handleDeleteEmployee(employee.id);
+                                      setOpenMenuId(null);
                                     }}
-                                    className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
+                                    className="flex w-full items-center gap-2 px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
                                   >
-                                    <Trash2 size={14} /> Delete
+                                    <Trash2 size={14} />
+                                    Delete
                                   </button>
                                 </div>
-                              )}
-                            </div>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
