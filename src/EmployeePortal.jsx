@@ -4,7 +4,8 @@ import {
   Smartphone, CheckCircle2, UserPlus, QrCode, Edit, Trash2, MoreVertical 
 } from "lucide-react";
 import logo from "./assets/logoEI.jpeg";
-import { API_BASE_URL } from "./config";
+import { API_BASE_URL, API_ROOT } from "./config";
+import PortalNav from "./PortalNav";
 
 // Send Invite Modal Component
 function SendInviteModal({ employee, onClose, onSend }) {
@@ -154,7 +155,7 @@ function SendInviteModal({ employee, onClose, onSend }) {
 }
 
 // Edit Employee Modal
-function EditEmployeeModal({ employee, onClose, onSave }) {
+function EditEmployeeModal({ employee, chapters, onClose, onSave }) {
   const [formData, setFormData] = useState({
     name: employee.name || `${employee.first_name || ""} ${employee.last_name || ""}`.trim(),
     membership_id: employee.membership_id || employee.membershipId || "",
@@ -162,13 +163,21 @@ function EditEmployeeModal({ employee, onClose, onSave }) {
     phone: employee.phone || "",
     primary_credential: employee.primary_credential || employee.primaryCredential || "QR",
     secondary_credential: employee.secondary_credential || employee.secondaryCredential || "SMS",
+    chapter: employee.chapter != null ? String(employee.chapter) : "",
   });
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.chapter) {
+      alert("Chapter is required.");
+      return;
+    }
     setSubmitting(true);
-    await onSave(employee.id, formData);
+    await onSave(employee.id, {
+      ...formData,
+      chapter: Number(formData.chapter),
+    });
     setSubmitting(false);
   };
 
@@ -195,6 +204,30 @@ function EditEmployeeModal({ employee, onClose, onSave }) {
               placeholder="MEM-67890"
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#2D5A5D]"
             />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1">
+              Chapter <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={formData.chapter}
+              onChange={(e) => setFormData({ ...formData, chapter: e.target.value })}
+              required
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#2D5A5D]"
+            >
+              <option value="">Select chapter</option>
+              {chapters.map((ch) => (
+                <option key={ch.id} value={ch.id}>
+                  {ch.name}
+                </option>
+              ))}
+              {formData.chapter &&
+                !chapters.some((ch) => String(ch.id) === String(formData.chapter)) && (
+                  <option value={formData.chapter}>
+                    {employee.chapter_name || `Chapter #${formData.chapter}`} (inactive)
+                  </option>
+                )}
+            </select>
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-500 mb-1">Phone Number</label>
@@ -237,18 +270,23 @@ function EditEmployeeModal({ employee, onClose, onSave }) {
 }
 
 // New Employee Modal
-function NewEmployeeModal({ onClose, onAdd }) {
+function NewEmployeeModal({ chapters, onClose, onAdd }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [membershipId, setMembershipId] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [chapter, setChapter] = useState("");
   const [secondaryCredential, setSecondaryCredential] = useState("Email");
   const [submitting, setSubmitting] = useState(false);
   const [validationError, setValidationError] = useState("");
 
   const hasContactMethod = email.trim() !== "" || phone.trim() !== "";
-  const canSubmit = firstName.trim() !== "" && lastName.trim() !== "" && hasContactMethod;
+  const canSubmit =
+    firstName.trim() !== "" &&
+    lastName.trim() !== "" &&
+    hasContactMethod &&
+    chapter !== "";
 
   const handleEmailChange = (e) => {
     const val = e.target.value;
@@ -284,6 +322,11 @@ function NewEmployeeModal({ onClose, onAdd }) {
       return;
     }
 
+    if (!chapter) {
+      setValidationError("Please select a chapter.");
+      return;
+    }
+
     setSubmitting(true);
     setValidationError("");
 
@@ -297,6 +340,7 @@ function NewEmployeeModal({ onClose, onAdd }) {
         phone: phoneTrimmed,
         primaryCredential: "QR",
         secondaryCredential,
+        chapter: Number(chapter),
       });
     } catch (err) {
       console.error("Failed to save employee:", err);
@@ -378,6 +422,29 @@ function NewEmployeeModal({ onClose, onAdd }) {
               placeholder="MEM-67890"
               className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
             />
+          </div>
+
+          <div className="mt-4">
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+              Chapter <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={chapter}
+              onChange={(e) => { setChapter(e.target.value); setValidationError(""); }}
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+            >
+              <option value="">Select chapter</option>
+              {chapters.map((ch) => (
+                <option key={ch.id} value={ch.id}>
+                  {ch.name}
+                </option>
+              ))}
+            </select>
+            {chapters.length === 0 && (
+              <p className="mt-1 text-xs text-amber-600">
+                No active chapters. Create one under Chapters first.
+              </p>
+            )}
           </div>
 
           <div className="mt-4">
@@ -466,6 +533,7 @@ function NewEmployeeModal({ onClose, onAdd }) {
 // Main Employee Portal Component
 export default function EmployeePortal() {
   const [employees, setEmployees] = useState([]);
+  const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -487,8 +555,21 @@ export default function EmployeePortal() {
     }
   };
 
+  const fetchChapters = async () => {
+    try {
+      const response = await fetch(`${API_ROOT}/chapters/?is_active=true`);
+      if (response.ok) {
+        const data = await response.json();
+        setChapters(Array.isArray(data) ? data : data.results || []);
+      }
+    } catch (error) {
+      console.error("Error loading chapters:", error);
+    }
+  };
+
   useEffect(() => {
     fetchEmployees();
+    fetchChapters();
   }, []);
 
   const filteredEmployees = useMemo(() => {
@@ -609,6 +690,11 @@ export default function EmployeePortal() {
       return;
     }
 
+    if (!formData.chapter) {
+      alert("Chapter is required.");
+      return;
+    }
+
     const payload = {
       name: formData.name,
       first_name: formData.firstName,
@@ -619,6 +705,7 @@ export default function EmployeePortal() {
       primary_credential: formData.primaryCredential || "QR",
       secondary_credential: formData.secondaryCredential || "Email",
       status: "not_invited",
+      chapter: formData.chapter,
     };
 
     try {
@@ -685,9 +772,10 @@ export default function EmployeePortal() {
     <div className="min-h-screen bg-[#EEF4F4]">
       {/* Header */}
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-4">
+          <div className="flex items-center gap-4">
             <img src={logo} alt="Enterprise-Infotech Logo" className="h-14 w-auto object-contain" />
+            <PortalNav />
           </div>
           <div className="relative hidden max-w-sm flex-1 sm:block">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -730,6 +818,7 @@ export default function EmployeePortal() {
                 <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
                   <tr>
                     <th scope="col" className="px-6 py-4 border-r border-slate-100">Name</th>
+                    <th scope="col" className="px-6 py-4 border-r border-slate-100">Chapter</th>
                     <th scope="col" className="px-6 py-4 border-r border-slate-100">Phone number</th>
                     <th scope="col" className="px-6 py-4 border-r border-slate-100">Email</th>
                     <th scope="col" className="px-6 py-4 border-r border-slate-100">Primary credential</th>
@@ -756,6 +845,10 @@ export default function EmployeePortal() {
                             </div>
                             <span>{displayName}</span>
                           </div>
+                        </td>
+
+                        <td className="px-6 py-4 border-r border-slate-100 whitespace-nowrap text-slate-600">
+                          {employee.chapter_name || "—"}
                         </td>
 
                         {/* Phone Number */}
@@ -851,6 +944,7 @@ export default function EmployeePortal() {
       {editingEmployee && (
         <EditEmployeeModal
           employee={editingEmployee}
+          chapters={chapters}
           onClose={() => setEditingEmployee(null)}
           onSave={handleUpdateEmployee}
         />
@@ -858,6 +952,7 @@ export default function EmployeePortal() {
 
       {showNewEmployeeModal && (
         <NewEmployeeModal
+          chapters={chapters}
           onClose={() => setShowNewEmployeeModal(false)}
           onAdd={handleAddEmployee}
         />

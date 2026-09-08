@@ -1,4 +1,5 @@
-// export const API_BASE_URL = "https://portal-production-fc81.up.railway.app/api/credentials/";
-// export const WALLET_API_BASE_URL = "https://portal-production-fc81.up.railway.app/api/wallet";
-export const API_BASE_URL = "http://127.0.0.1:8003/api/credentials/";
-export const WALLET_API_BASE_URL = "http://127.0.0.1:8003/api/wallet";
+// Production (Railway):
+// export const API_ROOT = "https://portal-production-fc81.up.railway.app/api";
+export const API_ROOT = "http://127.0.0.1:8003/api";
+export const API_BASE_URL = `${API_ROOT}/credentials/`;
+export const WALLET_API_BASE_URL = `${API_ROOT.replace(/\/api$/, "")}/api/wallet`;
