@@ -812,7 +812,7 @@ export default function EmployeePortal() {
       </header>
 
       {/* Main Content Area */}
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-8">
+      <main className="mx-auto max-w-[98%] px-2 sm:px-4 py-6 sm:py-8">
         <div className="mb-6">
           <h1 className="text-xl sm:text-2xl font-bold text-slate-800">Credential Portal</h1>
         </div>
@@ -950,127 +950,122 @@ export default function EmployeePortal() {
             </div>
 
             {/* DESKTOP & TABLET TABLE VIEW */}
-            <div className="hidden md:block rounded-xl border border-slate-200 bg-white shadow-sm">
-              <table className="w-full table-fixed border-collapse text-left text-xs lg:text-sm text-slate-700">
-                <thead className="border-b border-slate-200 bg-slate-50 font-semibold uppercase tracking-wider text-slate-500">
-                  <tr>
-                    <th scope="col" className="px-6 py-4 border-r border-slate-100">Name</th>
-                    <th scope="col" className="px-6 py-4 border-r border-slate-100">Chapter</th>
-                    <th scope="col" className="px-6 py-4 border-r border-slate-100">Phone number</th>
-                    <th scope="col" className="px-6 py-4 border-r border-slate-100">Email</th>
-                    <th scope="col" className="px-6 py-4 border-r border-slate-100">Primary credential</th>
-                    <th scope="col" className="px-6 py-4 border-r border-slate-100">MFA</th>
-                    <th scope="col" className="px-6 py-4 border-r border-slate-100">Sent At</th>
-                    <th scope="col" className="px-6 py-4 text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredEmployees.map((employee, index) => {
-                    const displayName = employee.name || `${employee.first_name || ""} ${employee.last_name || ""}`.trim();
-                    const primary = employee.primary_credential || employee.primaryCredential || "QR";
-                    const secondary = employee.secondary_credential || employee.secondaryCredential || "Email";
-                    const sentAt = employee.formatted_created_at || employee.createdAt || "N/A";
-                    const buttonLabel = employee.status === "not_invited" ? "Send Credential" : "Resend Credential";
-                    
-                    const isLastRow = index === filteredEmployees.length - 1;
+           {/* DESKTOP TABLE VIEW */}
+<div className="hidden rounded-xl border border-slate-200 bg-white shadow-sm md:block w-full overflow-visible">
+  <table className="w-full text-left text-xs sm:text-sm table-fixed">
+    <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+      <tr>
+        <th className="px-3 py-3.5 w-[15%]">Name</th>
+        <th className="px-3 py-3.5 w-[11%]">Chapter</th>
+        <th className="px-3 py-3.5 w-[12%]">Phone</th>
+        <th className="px-3 py-3.5 w-[18%]">Email</th>
+        <th className="px-3 py-3.5 w-[10%]">Primary</th>
+        <th className="px-3 py-3.5 w-[8%]">MFA</th>
+        <th className="px-3 py-3.5 w-[12%]">Sent At</th>
+        <th className="px-3 py-3.5 w-[14%] text-right">Actions</th>
+      </tr>
+    </thead>
+    <tbody className="divide-y divide-slate-100 text-slate-700">
+      {filteredEmployees.map((employee) => {
+        const displayName = employee.name || `${employee.first_name || ""} ${employee.last_name || ""}`.trim();
+        
+        // Format sent_at timestamp or display N/A
+        // Extract timestamp from potential backend field names
+const rawTimestamp = 
+  employee.sent_at || 
+  employee.sentAt || 
+  employee.date_sent || 
+  employee.dateSent || 
+  employee.created_at || 
+  employee.invited_at;
 
-                    return (
-                      <tr key={employee.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="px-2 lg:px-3 py-3.5 font-medium text-slate-900 border-r border-slate-100 truncate">
-                          <div className="flex items-center gap-2 truncate">
-                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2D5A5D]/10 text-xs font-bold text-[#2D5A5D]">
-                              {displayName.charAt(0).toUpperCase()}
-                            </div>
-                            <span className="truncate">{displayName}</span>
-                          </div>
-                        </td>
+const sentAtDisplay = rawTimestamp 
+  ? new Date(rawTimestamp).toLocaleString([], {
+      dateStyle: "short",
+      timeStyle: "short",
+    }) 
+  : "N/A";
 
-                        <td
-                          className="px-2 lg:px-3 py-3.5 border-r border-slate-100 text-slate-600 truncate"
-                          title={employee.chapter_name || undefined}
-                        >
-                          {employee.chapter_name || "—"}
-                        </td>
+        return (
+          <tr key={employee.id} className="hover:bg-slate-50/80 transition">
+            <td className="px-3 py-3.5 font-medium text-slate-900">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700">
+                  {displayName.charAt(0).toUpperCase()}
+                </span>
+                <span className="truncate" title={displayName}>{displayName}</span>
+              </div>
+            </td>
+            <td className="px-3 py-3.5 text-slate-600 truncate" title={employee.chapter_name || employee.chapter || "N/A"}>
+              {employee.chapter_name || employee.chapter || "N/A"}
+            </td>
+            <td className="px-3 py-3.5 text-slate-500 truncate" title={employee.phone || "N/A"}>
+              {employee.phone || "N/A"}
+            </td>
+            <td className="px-3 py-3.5 text-slate-500 truncate" title={employee.email || "N/A"}>
+              {employee.email || "N/A"}
+            </td>
+            <td className="px-3 py-3.5 truncate">{employee.primary_credential || employee.primaryCredential || "QR"}</td>
+            <td className="px-3 py-3.5 truncate">{employee.secondary_credential || employee.secondaryCredential || "Email"}</td>
+            
+            {/* SENT AT COLUMN */}
+            <td className="px-3 py-3.5 text-slate-500 truncate" title={sentAtDisplay}>
+              {sentAtDisplay}
+            </td>
 
-                        {/* Phone Number */}
-                        <td className="px-2 lg:px-3 py-3.5 border-r border-slate-100 text-slate-600 truncate">
-                          {employee.phone || "N/A"}
-                        </td>
-                        <td className="px-2 lg:px-3 py-3.5 border-r border-slate-100 text-slate-600 truncate" title={employee.email}>
-                          {employee.email || "N/A"}
-                        </td>
-                        <td className="px-2 lg:px-3 py-3.5 border-r border-slate-100 text-slate-600 text-center truncate">
-                          {primary}
-                        </td>
-                        <td className="px-2 lg:px-3 py-3.5 border-r border-slate-100 text-slate-600 text-center truncate">
-                          {secondary}
-                        </td>
-                        <td className="px-2 lg:px-3 py-3.5 border-r border-slate-100 text-slate-500 text-xs text-center truncate" title={sentAt}>
-                          {sentAt}
-                        </td>
-                        <td className="px-2 lg:px-3 py-3.5 text-center relative">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button
-                              onClick={() => setSelectedEmployee(employee)}
-                              className="flex items-center gap-1 rounded-full bg-[#2D5A5D] px-2.5 py-1.5 text-[11px] lg:text-xs font-semibold text-white shadow-sm transition hover:bg-[#234749] shrink-0"
-                            >
-                              <Send size={12} />
-                              <span className="whitespace-nowrap">{buttonLabel}</span>
-                            </button>
+            <td className="px-3 py-3.5 text-right relative">
+              <div className="flex items-center justify-end gap-1.5">
+                <button
+                  onClick={() => setSelectedEmployee(employee)}
+                  className="flex items-center gap-1 rounded-lg bg-[#2D5A5D] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-[#234749] whitespace-nowrap"
+                >
+                  <Send size={12} />
+                  <span>Send Credential</span>
+                </button>
 
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setOpenMenuId(openMenuId === employee.id ? null : employee.id);
-                              }}
-                              className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition shrink-0"
-                              title="More Actions"
-                            >
-                              <MoreVertical size={16} />
-                            </button>
+                {/* 3-Dots Action Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenMenuId(openMenuId === employee.id ? null : employee.id);
+                    }}
+                    className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                  >
+                    <MoreVertical size={16} />
+                  </button>
 
-                            {openMenuId === employee.id && (
-                              <>
-                                <div 
-                                  className="fixed inset-0 z-30" 
-                                  onClick={() => setOpenMenuId(null)} 
-                                />
-                                
-                                <div className={`absolute right-2 z-40 w-40 rounded-xl border border-slate-200 bg-white py-1 shadow-xl text-left ${
-                                  isLastRow ? "bottom-full mb-1" : "top-full mt-1"
-                                }`}>
-                                  <button
-                                    onClick={() => {
-                                      setEditingEmployee(employee);
-                                      setOpenMenuId(null);
-                                    }}
-                                    className="flex w-full items-center gap-2 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                                  >
-                                    <Edit size={14} className="text-slate-500" />
-                                    Edit
-                                  </button>
-
-                                  <button
-                                    onClick={() => {
-                                      handleDeleteEmployee(employee.id);
-                                      setOpenMenuId(null);
-                                    }}
-                                    className="flex w-full items-center gap-2 px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
-                                  >
-                                    <Trash2 size={14} />
-                                    Delete
-                                  </button>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                  {openMenuId === employee.id && (
+                    <div className="absolute right-0 top-full z-20 mt-1 w-28 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                      <button
+                        onClick={() => {
+                          setEditingEmployee(employee);
+                          setOpenMenuId(null);
+                        }}
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50"
+                      >
+                        <Edit size={13} /> Edit
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleDeleteEmployee(employee.id);
+                          setOpenMenuId(null);
+                        }}
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 size={13} /> Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </td>
+          </tr>
+        );
+      })}
+    </tbody>
+  </table>
+</div>
           </div>
         )}
       </main>
