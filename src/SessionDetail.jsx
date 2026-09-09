@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Trash2, RefreshCw } from "lucide-react";
+import { ArrowLeft, Trash2, RefreshCw, Download } from "lucide-react";
 import logo from "./assets/logoEI.jpeg";
 import { API_ROOT } from "./config";
 import PortalNav from "./PortalNav";
@@ -27,6 +27,63 @@ function formatDateTime(iso) {
   } catch {
     return iso;
   }
+}
+
+function downloadCSV(report, sessionTitle) {
+  if (!report) return;
+
+  // Prepare CSV rows
+  const headers = ["First Name", "Last Name", "Phone", "Email", "Scanned At"];
+  const rows = [];
+
+  // Add attended people
+  if (report.attended && report.attended.length > 0) {
+    report.attended.forEach((person) => {
+      const [firstName, ...lastNameParts] = person.name.split(" ");
+      const lastName = lastNameParts.join(" ");
+      rows.push([
+        firstName || "",
+        lastName || "",
+        person.phone || "",
+        person.email || "",
+        new Date(person.scanned_at || Date.now()).toLocaleString(),
+      ]);
+    });
+  }
+
+  // Add absent people (with blank scanned_at)
+  if (report.absent && report.absent.length > 0) {
+    report.absent.forEach((person) => {
+      const [firstName, ...lastNameParts] = person.name.split(" ");
+      const lastName = lastNameParts.join(" ");
+      rows.push([
+        firstName || "",
+        lastName || "",
+        person.phone || "",
+        person.email || "",
+        "", // Blank for absent
+      ]);
+    });
+  }
+
+  // Create CSV content
+  const csvContent = [
+    headers.join(","),
+    ...rows.map((row) =>
+      row
+        .map((cell) => `"${String(cell).replace(/"/g, '""')}"`) // Escape quotes
+        .join(",")
+    ),
+  ].join("\n");
+
+  // Download
+  const blob = new Blob([csvContent], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${sessionTitle || "attendance"}-report.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 function PeopleTable({ title, people, emptyLabel }) {
@@ -182,6 +239,13 @@ export default function SessionDetail() {
             <PortalNav />
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => downloadCSV(report, session?.title)}
+              className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            >
+              <Download size={14} />
+              Download CSV
+            </button>
             <button
               onClick={load}
               className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
