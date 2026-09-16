@@ -69,7 +69,7 @@ function SendInviteModal({ employee, onClose, onSend }) {
             </div>
             <div>
               <h2 className="text-lg font-semibold leading-tight">
-                Send Credential
+                Send Pass
               </h2>
               <p className="text-sm text-white/80">Recipient: {displayName}</p>
             </div>
@@ -169,7 +169,7 @@ function SendInviteModal({ employee, onClose, onSend }) {
             className="flex items-center gap-2 rounded-lg bg-[#2D5A5D] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#234749] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Send size={15} />
-            {sending ? "Sending..." : "Send Credential"}
+            {sending ? "Sending..." : "Send Pass"}
           </button>
         </div>
       </div>
@@ -463,7 +463,7 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
 
   const modalTitle = entryType
     ? `New ${entryType.charAt(0).toUpperCase() + entryType.slice(1)} Credential`
-    : "New User Credential";
+    : "New User Details";
 
   const lockedChapterLabel =
     lockedChapterName ||
@@ -823,6 +823,7 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
             </span>
           </div>
 
+<<<<<<< HEAD
           {!isVisitorOrSubstitute && (
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
@@ -850,6 +851,20 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
                   <option value="SMS">SMS</option>
                 </select>
               </div>
+=======
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                Pass Type
+              </label>
+              <select
+                disabled
+                value="QR"
+                className="w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-500 outline-none"
+              >
+                <option value="QR">QR</option>
+              </select>
+>>>>>>> 5345f55 (Updated UI)
             </div>
           )}
         </div>
@@ -867,7 +882,7 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
             className="flex items-center gap-2 rounded-lg bg-[#2D5A5D] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#234749] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus size={15} />
-            {submitting ? "Adding..." : "Add Credential"}
+            {submitting ? "Adding..." : "Add User"}
           </button>
         </div>
       </div>
@@ -1371,7 +1386,7 @@ export default function EmployeePortal() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search User Credentials..."
+              placeholder="Search User Details..."
               className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none focus:border-[#2D5A5D] focus:ring-2 focus:ring-[#2D5A5D]/20"
             />
           </div>
@@ -1380,7 +1395,7 @@ export default function EmployeePortal() {
             className="flex items-center gap-2 rounded-lg bg-[#2D5A5D] px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white transition hover:bg-[#234749]"
           >
             <Plus size={16} />
-            <span>New Invite</span>
+            <span>New Pass</span>
           </button>
         </div>
 
@@ -1405,17 +1420,17 @@ export default function EmployeePortal() {
       <main className="mx-auto max-w-[98%] px-2 sm:px-4 py-6 sm:py-8">
         <div className="mb-6">
           <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
-            Credential Portal
+            User Details
           </h1>
         </div>
 
         {loading ? (
           <div className="rounded-xl border border-slate-200 bg-white py-16 text-center text-sm text-slate-500">
-            Loading credentials from server...
+            Loading Users from server...
           </div>
         ) : filteredEmployees.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-200 bg-white py-16 text-center text-sm text-slate-400">
-            No employees match this search.
+            No Users match this search.
           </div>
         ) : (
           <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-visible">
@@ -1426,7 +1441,7 @@ export default function EmployeePortal() {
                   <th className="px-3 py-3.5 font-semibold">Chapter</th>
                   <th className="px-3 py-3.5 font-semibold">Phone</th>
                   <th className="px-3 py-3.5 font-semibold">Email</th>
-                  <th className="px-3 py-3.5 font-semibold">Primary</th>
+                  <th className="px-3 py-3.5 font-semibold">Type</th>
                   <th className="px-3 py-3.5 font-semibold">Secondary</th>
                   <th className="px-3 py-3.5 font-semibold">Sent At</th>
                   <th className="px-3 py-3.5 font-semibold text-right">Actions</th>
@@ -1530,7 +1545,7 @@ export default function EmployeePortal() {
                               className="flex items-center gap-1 rounded-lg bg-[#2D5A5D] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-[#234749] whitespace-nowrap"
                             >
                               <Send size={12} />
-                              <span>Send Credential</span>
+                              <span>Send Pass</span>
                             </button>
 
                             {/* 3-Dots Action Dropdown */}
