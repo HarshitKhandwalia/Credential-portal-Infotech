@@ -36,6 +36,29 @@ export default function Scanner() {
 
   const scannerRef = useRef(null);
   const processingRef = useRef(false);
+  const clearingRef = useRef(false);
+  const selectedSessionRef = useRef(selectedSession);
+  selectedSessionRef.current = selectedSession;
+
+  const safeClearScanner = async () => {
+    const scanner = scannerRef.current;
+    if (!scanner || clearingRef.current) return;
+    clearingRef.current = true;
+    scannerRef.current = null;
+    try {
+      await scanner.clear();
+    } catch (err) {
+      // Library/React DOM race (removeChild) — ignore after stop/unmount
+      console.warn("Scanner clear ignored:", err?.message || err);
+    } finally {
+      // Reset library container if it still exists so a fresh render can attach
+      const el = document.getElementById("qr-reader");
+      if (el) {
+        el.innerHTML = "";
+      }
+      clearingRef.current = false;
+    }
+  };
 
   useEffect(() => {
     const loadChapters = async () => {
@@ -56,6 +79,7 @@ export default function Scanner() {
   }, []);
 
   const selectChapter = async (chapter) => {
+    await safeClearScanner();
     setSelectedChapter(chapter);
     setSelectedSession(null);
     setScanResult(null);
@@ -77,14 +101,16 @@ export default function Scanner() {
     }
   };
 
-  const selectSession = (session) => {
+  const selectSession = async (session) => {
+    await safeClearScanner();
     setSelectedSession(session);
     setScanResult(null);
     setError(null);
     setStep("scan");
   };
 
-  const changeChapter = () => {
+  const changeChapter = async () => {
+    await safeClearScanner();
     setStep("chapter");
     setSelectedChapter(null);
     setSelectedSession(null);
@@ -93,7 +119,8 @@ export default function Scanner() {
     setError(null);
   };
 
-  const changeSession = () => {
+  const changeSession = async () => {
+    await safeClearScanner();
     setStep("session");
     setSelectedSession(null);
     setScanResult(null);
@@ -102,7 +129,8 @@ export default function Scanner() {
 
   const processScan = async (credential) => {
     if (processingRef.current) return;
-    if (!selectedSession?.id) {
+    const session = selectedSessionRef.current;
+    if (!session?.id) {
       setError("Select a session before scanning.");
       return;
     }
@@ -119,18 +147,23 @@ export default function Scanner() {
         },
         body: JSON.stringify({
           credential,
-          session_id: selectedSession.id,
+          session_id: session.id,
           device_id: "gate-1",
         }),
       });
 
       const data = await response.json().catch(() => ({}));
 
+      // Stop camera before React swaps UI — avoids removeChild race
+      await safeClearScanner();
+
       if (response.status === 400 || data.status === "INVALID") {
         setScanResult({
           status: "INVALID",
           message: data.message || data.detail || "Invalid scan request.",
           employee: data.employee || null,
+          data: data.data || null,
+          type: data.type || null,
         });
         return;
       }
@@ -143,6 +176,7 @@ export default function Scanner() {
     } catch (err) {
       console.error("Scan error:", err);
       setError("Failed to connect to backend. Is Django running?");
+      processingRef.current = false;
     } finally {
       setLoading(false);
       processingRef.current = false;
@@ -152,6 +186,7 @@ export default function Scanner() {
   useEffect(() => {
     if (step !== "scan" || scanResult) return;
 
+    let cancelled = false;
     const scanner = new Html5QrcodeScanner(
       "qr-reader",
       {
@@ -164,27 +199,32 @@ export default function Scanner() {
     );
 
     const onScanSuccess = (decodedText) => {
+      if (cancelled || processingRef.current) return;
       const credential = decodedText.trim();
       if (!credential) return;
       processScan(credential);
     };
 
-    const onScanError = () => {};
-
-    scanner.render(onScanSuccess, onScanError);
-    scannerRef.current = scanner;
+    scanner.render(onScanSuccess, () => {});
+    if (!cancelled) {
+      scannerRef.current = scanner;
+    }
 
     return () => {
-      scanner.clear().catch((err) => {
-        console.error("Scanner cleanup error:", err);
-      });
+      cancelled = true;
       if (scannerRef.current === scanner) {
         scannerRef.current = null;
       }
+      scanner.clear().catch(() => {
+        // Ignore library/React DOM races on stop/unmount
+      });
+      const el = document.getElementById("qr-reader");
+      if (el) el.innerHTML = "";
     };
-  }, [step, scanResult, selectedSession]);
+  }, [step, scanResult, selectedSession?.id]);
 
-  const handleReset = () => {
+  const handleReset = async () => {
+    await safeClearScanner();
     setScanResult(null);
     setError(null);
     processingRef.current = false;
@@ -536,36 +576,39 @@ export default function Scanner() {
 
         {step === "scan" && (
           <>
-            {!scanResult ? (
-              <>
-                <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-                  <h2 className="mb-2 text-lg font-semibold text-slate-800">Scan Credential</h2>
-                  <p className="mb-6 text-sm text-slate-600">
-                    Point your camera at the credential code for{" "}
-                    <span className="font-medium text-slate-800">
-                      {selectedSession?.title || `Session #${selectedSession?.id}`}
-                    </span>
-                    .
-                  </p>
+            {/* Keep #qr-reader mounted so html5-qrcode doesn't fight React unmount */}
+            <div
+              className={`mb-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm ${
+                scanResult ? "hidden" : ""
+              }`}
+            >
+              <h2 className="mb-2 text-lg font-semibold text-slate-800">Scan Credential</h2>
+              <p className="mb-6 text-sm text-slate-600">
+                Point your camera at the credential code for{" "}
+                <span className="font-medium text-slate-800">
+                  {selectedSession?.title || `Session #${selectedSession?.id}`}
+                </span>
+                .
+              </p>
 
-                  {error && (
-                    <div className="mb-6 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4">
-                      <AlertCircle size={20} className="text-red-600" />
-                      <p className="text-sm font-medium text-red-600">{error}</p>
-                    </div>
-                  )}
-
-                  <div id="qr-reader" className="w-full overflow-hidden rounded-lg" />
-
-                  {loading && (
-                    <div className="mt-4 flex items-center justify-center gap-2">
-                      <Loader size={18} className="animate-spin text-slate-600" />
-                      <p className="text-sm text-slate-600">Processing scan...</p>
-                    </div>
-                  )}
+              {error && (
+                <div className="mb-6 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4">
+                  <AlertCircle size={20} className="text-red-600" />
+                  <p className="text-sm font-medium text-red-600">{error}</p>
                 </div>
-              </>
-            ) : (
+              )}
+
+              <div id="qr-reader" className="w-full overflow-hidden rounded-lg" />
+
+              {loading && (
+                <div className="mt-4 flex items-center justify-center gap-2">
+                  <Loader size={18} className="animate-spin text-slate-600" />
+                  <p className="text-sm text-slate-600">Processing scan...</p>
+                </div>
+              )}
+            </div>
+
+            {scanResult && (
               <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
                 {renderResult()}
               </div>
