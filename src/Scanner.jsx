@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { Html5QrcodeScanner, Html5QrcodeScanType } from "html5-qrcode";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -157,8 +157,10 @@ export default function Scanner() {
       {
         fps: 10,
         qrbox: 300,
+        rememberLastUsedCamera: true,
+        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
       },
-      false
+      /* verbose= */ false
     );
 
     const onScanSuccess = (decodedText) => {
@@ -368,10 +370,10 @@ export default function Scanner() {
           <div className="flex items-center gap-4">
             <Link
               to="/"
-              className="flex items-center gap-2 rounded-lg p-2 text-slate-600 hover:bg-slate-100"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[#2D5A5D]/40 hover:bg-[#2D5A5D]/5 hover:text-[#2D5A5D]"
             >
-              <ArrowLeft size={20} />
-              <span className="text-sm font-medium">Back to Portal</span>
+              <ArrowLeft size={16} />
+              Back to Portal
             </Link>
             <h1 className="text-2xl font-bold text-slate-800">QR Scanner</h1>
           </div>
@@ -381,36 +383,57 @@ export default function Scanner() {
 
       <main className="mx-auto max-w-2xl px-6 py-8">
         {(selectedChapter || selectedSession) && (
-          <div className="mb-6 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              {selectedChapter && (
-                <div className="flex items-center gap-2">
-                  <BookOpen size={14} className="text-[#2D5A5D]" />
-                  <span className="font-medium text-slate-800">{selectedChapter.name}</span>
+          <div className="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+                {selectedChapter && (
+                  <div className="inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
+                    <BookOpen size={15} className="shrink-0 text-[#2D5A5D]" />
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                        Chapter
+                      </p>
+                      <p className="truncate text-sm font-semibold text-slate-800">
+                        {selectedChapter.name}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {selectedSession && (
+                  <div className="inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
+                    <Calendar size={15} className="shrink-0 text-[#2D5A5D]" />
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                        Session
+                      </p>
+                      <p className="truncate text-sm font-semibold text-slate-800">
+                        {selectedSession.title || `Session #${selectedSession.id}`}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {selectedChapter && (
                   <button
                     type="button"
                     onClick={changeChapter}
-                    className="text-xs font-medium text-[#2D5A5D] hover:underline"
+                    className="inline-flex items-center justify-center rounded-lg border border-[#2D5A5D]/30 bg-white px-3 py-2 text-xs font-semibold text-[#2D5A5D] transition hover:bg-[#2D5A5D] hover:text-white"
                   >
-                    Change
+                    Change Chapter
                   </button>
-                </div>
-              )}
-              {selectedSession && (
-                <div className="flex items-center gap-2">
-                  <Calendar size={14} className="text-[#2D5A5D]" />
-                  <span className="font-medium text-slate-800">
-                    {selectedSession.title || `Session #${selectedSession.id}`}
-                  </span>
+                )}
+                {selectedSession && (
                   <button
                     type="button"
                     onClick={changeSession}
-                    className="text-xs font-medium text-[#2D5A5D] hover:underline"
+                    className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-[#2D5A5D]/40 hover:bg-[#2D5A5D]/5 hover:text-[#2D5A5D]"
                   >
-                    Change
+                    Change Session
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -440,10 +463,17 @@ export default function Scanner() {
                     <button
                       type="button"
                       onClick={() => selectChapter(ch)}
-                      className="flex w-full items-center justify-between rounded-lg border border-slate-200 px-4 py-3 text-left text-sm font-medium text-slate-800 transition hover:border-[#2D5A5D] hover:bg-[#2D5A5D]/5"
+                      className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-left transition hover:border-[#2D5A5D] hover:bg-[#2D5A5D]/5"
                     >
-                      <span>{ch.name}</span>
-                      <span className="text-xs text-slate-400">Select</span>
+                      <span className="flex items-center gap-3">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#2D5A5D]/10 text-[#2D5A5D]">
+                          <BookOpen size={16} />
+                        </span>
+                        <span className="text-sm font-semibold text-slate-800">{ch.name}</span>
+                      </span>
+                      <span className="rounded-lg bg-[#2D5A5D] px-3 py-1.5 text-xs font-semibold text-white">
+                        Select
+                      </span>
                     </button>
                   </li>
                 ))}
@@ -477,14 +507,24 @@ export default function Scanner() {
                     <button
                       type="button"
                       onClick={() => selectSession(session)}
-                      className="flex w-full flex-col rounded-lg border border-slate-200 px-4 py-3 text-left transition hover:border-[#2D5A5D] hover:bg-[#2D5A5D]/5"
+                      className="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-left transition hover:border-[#2D5A5D] hover:bg-[#2D5A5D]/5"
                     >
-                      <span className="text-sm font-medium text-slate-800">
-                        {session.title || `Session #${session.id}`}
+                      <span className="flex min-w-0 items-center gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#2D5A5D]/10 text-[#2D5A5D]">
+                          <Calendar size={16} />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-semibold text-slate-800">
+                            {session.title || `Session #${session.id}`}
+                          </span>
+                          <span className="mt-0.5 block text-xs text-slate-500">
+                            {formatDateTime(session.starts_at)}
+                            {session.status ? ` · ${session.status}` : ""}
+                          </span>
+                        </span>
                       </span>
-                      <span className="mt-1 text-xs text-slate-500">
-                        {formatDateTime(session.starts_at)}
-                        {session.status ? ` · ${session.status}` : ""}
+                      <span className="shrink-0 rounded-lg bg-[#2D5A5D] px-3 py-1.5 text-xs font-semibold text-white">
+                        Select
                       </span>
                     </button>
                   </li>

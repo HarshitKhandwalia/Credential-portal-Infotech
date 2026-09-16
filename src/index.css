@@ -1,3 +1,83 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* html5-qrcode scanner widget — match portal styling */
+#qr-reader {
+  border: none !important;
+}
+
+#qr-reader__dashboard_section,
+#qr-reader__dashboard_section_csr,
+#qr-reader__header_message {
+  text-align: left !important;
+}
+
+#qr-reader__dashboard_section_csr {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+#qr-reader img[alt="Info by scanapp.org"] {
+  display: none !important;
+}
+
+#html5-qrcode-select-camera {
+  width: 100%;
+  max-width: 280px;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: #1e293b;
+  outline: none;
+}
+
+#html5-qrcode-select-camera:focus {
+  border-color: #2d5a5d;
+  box-shadow: 0 0 0 2px rgba(45, 90, 93, 0.2);
+}
+
+/* Style library buttons without forcing display (Start/Stop hide via display:none) */
+#qr-reader button.html5-qrcode-element {
+  align-items: center;
+  justify-content: center;
+  margin: 0.25rem 0.5rem 0.25rem 0;
+  border-radius: 0.5rem !important;
+  border: none !important;
+  background: #2d5a5d !important;
+  padding: 0.625rem 1.25rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  color: #fff !important;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+#qr-reader button.html5-qrcode-element:hover {
+  background: #234749 !important;
+}
+
+#html5-qrcode-button-camera-start,
+#html5-qrcode-button-camera-permission {
+  background: #2d5a5d !important;
+  color: #fff !important;
+}
+
+#html5-qrcode-button-camera-stop {
+  background: #fff !important;
+  color: #b91c1c !important;
+  border: 1px solid #fecaca !important;
+}
+
+#html5-qrcode-button-camera-stop:hover {
+  background: #fef2f2 !important;
+}
+
+#html5-qrcode-anchor-scan-type-change,
+#html5-qrcode-button-file-selection {
+  display: none !important;
+}
