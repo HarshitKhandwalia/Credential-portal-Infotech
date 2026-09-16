@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 const links = [
   { to: "/", label: "Users", end: true },
   { to: "/chapters", label: "Chapters" },
-  // { to: "/scanner", label: "Scanner" },
+  { to: "/scanner", label: "Scanner" },
 ];
 
 export default function PortalNav() {
