@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Html5QrcodeScanner, Html5QrcodeScanType } from "html5-qrcode";
+import { Html5Qrcode } from "html5-qrcode";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -8,6 +8,8 @@ import {
   Loader,
   BookOpen,
   Calendar,
+  Camera,
+  SwitchCamera,
 } from "lucide-react";
 import { API_BASE_URL, API_ROOT } from "./config";
 import PortalNav from "./PortalNav";
@@ -19,6 +21,20 @@ function formatDateTime(iso) {
   } catch {
     return iso;
   }
+}
+
+function getQrboxSize() {
+  const el = document.getElementById("qr-reader");
+  const width = el?.clientWidth || Math.min(window.innerWidth - 48, 480) || 300;
+  return Math.max(180, Math.min(250, Math.floor(width * 0.7)));
+}
+
+function pickBackCameraId(devices) {
+  if (!devices?.length) return null;
+  const back = devices.find((d) =>
+    /back|rear|environment|world/i.test(d.label || "")
+  );
+  return back?.id || devices[0]?.id || null;
 }
 
 export default function Scanner() {
@@ -34,31 +50,170 @@ export default function Scanner() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const [cameraRunning, setCameraRunning] = useState(false);
+  const [cameraStarting, setCameraStarting] = useState(false);
+  const [cameras, setCameras] = useState([]);
+  const [activeCameraId, setActiveCameraId] = useState(null);
+
   const scannerRef = useRef(null);
   const processingRef = useRef(false);
-  const clearingRef = useRef(false);
+  const runningRef = useRef(false);
+  const stoppingRef = useRef(false);
+  const startingRef = useRef(false);
+  const startGenRef = useRef(0);
   const selectedSessionRef = useRef(selectedSession);
   selectedSessionRef.current = selectedSession;
+  const activeCameraIdRef = useRef(activeCameraId);
+  activeCameraIdRef.current = activeCameraId;
+  const camerasRef = useRef(cameras);
+  camerasRef.current = cameras;
 
-  const safeClearScanner = async () => {
-    const scanner = scannerRef.current;
-    if (!scanner || clearingRef.current) return;
-    clearingRef.current = true;
-    scannerRef.current = null;
+  const stopCamera = useCallback(async () => {
+    startGenRef.current += 1;
+    if (stoppingRef.current) return;
+    stoppingRef.current = true;
     try {
-      await scanner.clear();
-    } catch (err) {
-      // Library/React DOM race (removeChild) — ignore after stop/unmount
-      console.warn("Scanner clear ignored:", err?.message || err);
-    } finally {
-      // Reset library container if it still exists so a fresh render can attach
-      const el = document.getElementById("qr-reader");
-      if (el) {
-        el.innerHTML = "";
+      const scanner = scannerRef.current;
+      runningRef.current = false;
+      if (scanner) {
+        try {
+          if (scanner.isScanning) {
+            await scanner.stop();
+          }
+        } catch {
+          try {
+            await scanner.stop();
+          } catch {
+            // already stopped
+          }
+        }
+        try {
+          scanner.clear();
+        } catch {
+          // ignore clear races
+        }
       }
-      clearingRef.current = false;
+      scannerRef.current = null;
+      setCameraRunning(false);
+    } finally {
+      stoppingRef.current = false;
     }
-  };
+  }, []);
+
+  const startCamera = useCallback(
+    async (cameraId) => {
+      if (startingRef.current || runningRef.current) return;
+      startingRef.current = true;
+      setCameraStarting(true);
+      setError(null);
+      const gen = startGenRef.current;
+
+      try {
+        let devices = camerasRef.current;
+        if (!devices.length) {
+          devices = (await Html5Qrcode.getCameras()) || [];
+          if (gen !== startGenRef.current) return;
+          setCameras(devices);
+          camerasRef.current = devices;
+        }
+
+        const id =
+          cameraId ||
+          activeCameraIdRef.current ||
+          pickBackCameraId(devices);
+
+        if (scannerRef.current) {
+          const existing = scannerRef.current;
+          runningRef.current = false;
+          try {
+            if (existing.isScanning) await existing.stop();
+          } catch {
+            try {
+              await existing.stop();
+            } catch {
+              /* ignore */
+            }
+          }
+          try {
+            existing.clear();
+          } catch {
+            /* ignore */
+          }
+          scannerRef.current = null;
+        }
+
+        if (gen !== startGenRef.current) return;
+
+        const scanner = new Html5Qrcode("qr-reader");
+        scannerRef.current = scanner;
+
+        const cameraConfig = id || { facingMode: "environment" };
+        await scanner.start(
+          cameraConfig,
+          { fps: 10, qrbox: getQrboxSize() },
+          (decodedText) => {
+            if (!runningRef.current || processingRef.current) return;
+            const credential = String(decodedText || "").trim();
+            if (!credential) return;
+            processScanRef.current?.(credential);
+          },
+          () => {}
+        );
+
+        if (gen !== startGenRef.current) {
+          try {
+            await scanner.stop();
+          } catch {
+            /* ignore */
+          }
+          try {
+            scanner.clear();
+          } catch {
+            /* ignore */
+          }
+          if (scannerRef.current === scanner) scannerRef.current = null;
+          return;
+        }
+
+        runningRef.current = true;
+        setCameraRunning(true);
+        if (id) {
+          setActiveCameraId(id);
+          activeCameraIdRef.current = id;
+        }
+      } catch (err) {
+        console.error(err);
+        runningRef.current = false;
+        setCameraRunning(false);
+        scannerRef.current = null;
+        if (gen === startGenRef.current) {
+          setError(
+            err?.message ||
+              "Could not start camera. Allow camera permission and try again."
+          );
+        }
+      } finally {
+        startingRef.current = false;
+        setCameraStarting(false);
+      }
+    },
+    []
+  );
+
+  const switchCamera = useCallback(async () => {
+    const list = camerasRef.current;
+    if (list.length < 2) return;
+    const currentId = activeCameraIdRef.current;
+    const idx = Math.max(
+      0,
+      list.findIndex((c) => c.id === currentId)
+    );
+    const next = list[(idx + 1) % list.length];
+    await stopCamera();
+    await startCamera(next.id);
+  }, [startCamera, stopCamera]);
+
+  const processScanRef = useRef(null);
 
   useEffect(() => {
     const loadChapters = async () => {
@@ -79,7 +234,7 @@ export default function Scanner() {
   }, []);
 
   const selectChapter = async (chapter) => {
-    await safeClearScanner();
+    await stopCamera();
     setSelectedChapter(chapter);
     setSelectedSession(null);
     setScanResult(null);
@@ -102,7 +257,7 @@ export default function Scanner() {
   };
 
   const selectSession = async (session) => {
-    await safeClearScanner();
+    await stopCamera();
     setSelectedSession(session);
     setScanResult(null);
     setError(null);
@@ -110,7 +265,7 @@ export default function Scanner() {
   };
 
   const changeChapter = async () => {
-    await safeClearScanner();
+    await stopCamera();
     setStep("chapter");
     setSelectedChapter(null);
     setSelectedSession(null);
@@ -120,7 +275,7 @@ export default function Scanner() {
   };
 
   const changeSession = async () => {
-    await safeClearScanner();
+    await stopCamera();
     setStep("session");
     setSelectedSession(null);
     setScanResult(null);
@@ -140,6 +295,9 @@ export default function Scanner() {
     setError(null);
 
     try {
+      // Stop camera before API + result UI
+      await stopCamera();
+
       const response = await fetch(`${API_BASE_URL}scan/`, {
         method: "POST",
         headers: {
@@ -153,9 +311,6 @@ export default function Scanner() {
       });
 
       const data = await response.json().catch(() => ({}));
-
-      // Stop camera before React swaps UI — avoids removeChild race
-      await safeClearScanner();
 
       if (response.status === 400 || data.status === "INVALID") {
         setScanResult({
@@ -176,55 +331,33 @@ export default function Scanner() {
     } catch (err) {
       console.error("Scan error:", err);
       setError("Failed to connect to backend. Is Django running?");
-      processingRef.current = false;
     } finally {
       setLoading(false);
       processingRef.current = false;
     }
   };
 
+  processScanRef.current = processScan;
+
+  // Auto-start back camera when entering scan step
   useEffect(() => {
     if (step !== "scan" || scanResult) return;
 
     let cancelled = false;
-    const scanner = new Html5QrcodeScanner(
-      "qr-reader",
-      {
-        fps: 10,
-        qrbox: 300,
-        rememberLastUsedCamera: true,
-        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
-      },
-      /* verbose= */ false
-    );
-
-    const onScanSuccess = (decodedText) => {
-      if (cancelled || processingRef.current) return;
-      const credential = decodedText.trim();
-      if (!credential) return;
-      processScan(credential);
-    };
-
-    scanner.render(onScanSuccess, () => {});
-    if (!cancelled) {
-      scannerRef.current = scanner;
-    }
+    (async () => {
+      // Let the qr-reader div mount first
+      await new Promise((r) => requestAnimationFrame(() => r()));
+      if (!cancelled) await startCamera();
+    })();
 
     return () => {
       cancelled = true;
-      if (scannerRef.current === scanner) {
-        scannerRef.current = null;
-      }
-      scanner.clear().catch(() => {
-        // Ignore library/React DOM races on stop/unmount
-      });
-      const el = document.getElementById("qr-reader");
-      if (el) el.innerHTML = "";
+      stopCamera();
     };
-  }, [step, scanResult, selectedSession?.id]);
+  }, [step, scanResult, selectedSession?.id, startCamera, stopCamera]);
 
   const handleReset = async () => {
-    await safeClearScanner();
+    await stopCamera();
     setScanResult(null);
     setError(null);
     processingRef.current = false;
@@ -576,7 +709,6 @@ export default function Scanner() {
 
         {step === "scan" && (
           <>
-            {/* Keep #qr-reader mounted so html5-qrcode doesn't fight React unmount */}
             <div
               className={`mb-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm ${
                 scanResult ? "hidden" : ""
@@ -598,7 +730,53 @@ export default function Scanner() {
                 </div>
               )}
 
-              <div id="qr-reader" className="w-full overflow-hidden rounded-lg" />
+              <div
+                id="qr-reader"
+                className="w-full min-h-[220px] overflow-hidden rounded-lg bg-slate-900/5"
+              />
+
+              <p className="mt-3 text-xs text-slate-500">
+                {cameraStarting
+                  ? "Starting camera..."
+                  : cameraRunning
+                    ? "Camera running — hold steady on the QR code."
+                    : "Camera stopped."}
+              </p>
+
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {!cameraRunning ? (
+                  <button
+                    type="button"
+                    onClick={() => startCamera()}
+                    disabled={cameraStarting || loading}
+                    className="inline-flex items-center gap-2 rounded-lg bg-[#2D5A5D] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#234749] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Camera size={16} />
+                    {cameraStarting ? "Starting..." : "Start Camera"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => stopCamera()}
+                    disabled={loading}
+                    className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Stop Camera
+                  </button>
+                )}
+
+                {cameras.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => switchCamera()}
+                    disabled={cameraStarting || loading}
+                    className="inline-flex items-center gap-2 rounded-lg border border-[#2D5A5D]/30 bg-white px-4 py-2.5 text-sm font-semibold text-[#2D5A5D] transition hover:bg-[#2D5A5D] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <SwitchCamera size={16} />
+                    Switch Camera
+                  </button>
+                )}
+              </div>
 
               {loading && (
                 <div className="mt-4 flex items-center justify-center gap-2">
