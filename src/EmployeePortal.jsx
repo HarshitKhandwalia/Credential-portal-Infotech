@@ -823,12 +823,11 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
             </span>
           </div>
 
-<<<<<<< HEAD
           {!isVisitorOrSubstitute && (
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Primary Credential
+                  Pass Type
                 </label>
                 <select
                   disabled
@@ -851,20 +850,6 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
                   <option value="SMS">SMS</option>
                 </select>
               </div>
-=======
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
-                Pass Type
-              </label>
-              <select
-                disabled
-                value="QR"
-                className="w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-500 outline-none"
-              >
-                <option value="QR">QR</option>
-              </select>
->>>>>>> 5345f55 (Updated UI)
             </div>
           )}
         </div>
