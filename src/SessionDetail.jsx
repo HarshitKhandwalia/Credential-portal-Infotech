@@ -29,6 +29,101 @@ function formatDateTime(iso) {
   }
 }
 
+function entrySessionId(entry) {
+  if (entry?.session_id != null) return entry.session_id;
+  if (typeof entry?.session === "object" && entry.session?.id != null) return entry.session.id;
+  if (entry?.session != null && typeof entry.session !== "object") return entry.session;
+  return null;
+}
+
+function isGuestScanned(entry) {
+  if (entry?.scanned_at) return true;
+  return String(entry?.status || "").toLowerCase() === "scanned";
+}
+
+function personTypeLabel(type) {
+  if (type === "visitor") return "Visitor";
+  if (type === "substitute") return "Substitute";
+  return "Member";
+}
+
+function personTypeBadgeClass(type) {
+  if (type === "visitor") return "bg-blue-100 text-blue-700";
+  if (type === "substitute") return "bg-purple-100 text-purple-700";
+  return "bg-slate-100 text-slate-600";
+}
+
+function collectSessionGuests(credentials, sessionId) {
+  const guests = [];
+  for (const member of credentials) {
+    for (const visitor of member.visitors || []) {
+      if (String(entrySessionId(visitor)) === String(sessionId)) {
+        guests.push({
+          ...visitor,
+          type: "visitor",
+          member_name: visitor.member_name || member.name,
+        });
+      }
+    }
+    for (const substitute of member.substitutes || []) {
+      if (String(entrySessionId(substitute)) === String(sessionId)) {
+        guests.push({
+          ...substitute,
+          type: "substitute",
+          member_name: substitute.member_name || member.name,
+        });
+      }
+    }
+  }
+  return guests;
+}
+
+function buildAttendanceLists(report, credentials, sessionId, sessionEndsAt) {
+  const membersAttended = (report?.attended || []).map((person) => ({
+    ...person,
+    type: person.type || "member",
+  }));
+  const membersNotScanned = (report?.absent || []).map((person) => ({
+    ...person,
+    type: person.type || "member",
+  }));
+
+  // If report already includes typed guests, don't double-merge from credentials
+  const reportHasGuests = [...membersAttended, ...membersNotScanned].some(
+    (p) => p.type === "visitor" || p.type === "substitute"
+  );
+
+  let attended = membersAttended;
+  let notScanned = membersNotScanned;
+
+  if (!reportHasGuests && credentials?.length) {
+    const guests = collectSessionGuests(credentials, sessionId);
+    const guestsAttended = guests.filter(isGuestScanned);
+    const guestsNotScanned = guests.filter((g) => !isGuestScanned(g));
+    attended = [...membersAttended, ...guestsAttended];
+    notScanned = [...membersNotScanned, ...guestsNotScanned];
+  }
+
+  const endsAtMs = sessionEndsAt ? new Date(sessionEndsAt).getTime() : NaN;
+  const sessionEnded =
+    !Number.isNaN(endsAtMs) && Date.now() >= endsAtMs;
+
+  // Before session end: unscanned people are still pending, not absent
+  const pending = sessionEnded ? [] : notScanned;
+  const absent = sessionEnded ? notScanned : [];
+
+  return {
+    attended,
+    pending,
+    absent,
+    session_ended: sessionEnded,
+    expected_count: attended.length + notScanned.length,
+    attended_count: attended.length,
+    pending_count: pending.length,
+    absent_count: absent.length,
+  };
+}
+
 function PeopleTable({ title, people, emptyLabel }) {
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -46,24 +141,37 @@ function PeopleTable({ title, people, emptyLabel }) {
             <thead className="border-b border-slate-100 text-xs font-semibold uppercase tracking-wider text-slate-500">
               <tr>
                 <th className="px-6 py-3">Name</th>
+                <th className="px-6 py-3">Type</th>
+                <th className="px-6 py-3">For Member</th>
                 <th className="px-6 py-3">Membership ID</th>
-                <th className="px-6 py-3">Credential</th>
                 <th className="px-6 py-3">Email</th>
                 <th className="px-6 py-3">Phone</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {people.map((person) => (
-                <tr key={person.id} className="hover:bg-slate-50/80">
-                  <td className="px-6 py-3 font-medium text-slate-900">{person.name}</td>
-                  <td className="px-6 py-3 text-slate-600">{person.membership_id || "—"}</td>
-                  <td className="px-6 py-3 text-slate-600 font-mono text-xs">
-                    {person.credential || "—"}
-                  </td>
-                  <td className="px-6 py-3 text-slate-600">{person.email || "—"}</td>
-                  <td className="px-6 py-3 text-slate-600">{person.phone || "—"}</td>
-                </tr>
-              ))}
+              {people.map((person) => {
+                const type = person.type || "member";
+                return (
+                  <tr key={`${type}-${person.id}`} className="hover:bg-slate-50/80">
+                    <td className="px-6 py-3 font-medium text-slate-900">{person.name}</td>
+                    <td className="px-6 py-3">
+                      <span
+                        className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${personTypeBadgeClass(type)}`}
+                      >
+                        {personTypeLabel(type)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3 text-slate-600">
+                      {type === "member" ? "—" : person.member_name || "—"}
+                    </td>
+                    <td className="px-6 py-3 text-slate-600">
+                      {person.membership_id || "—"}
+                    </td>
+                    <td className="px-6 py-3 text-slate-600">{person.email || "—"}</td>
+                    <td className="px-6 py-3 text-slate-600">{person.phone || "—"}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -89,9 +197,10 @@ export default function SessionDetail() {
   const load = async () => {
     setLoading(true);
     try {
-      const [sessionRes, reportRes] = await Promise.all([
+      const [sessionRes, reportRes, credentialsRes] = await Promise.all([
         fetch(`${API_ROOT}/sessions/${sessionId}/`),
         fetch(`${API_ROOT}/sessions/${sessionId}/report/`),
+        fetch(`${API_ROOT}/credentials/`),
       ]);
       if (!sessionRes.ok) throw new Error(`Session ${sessionRes.status}`);
       const sessionData = await sessionRes.json();
@@ -101,8 +210,26 @@ export default function SessionDetail() {
       setEndsAt(toLocalInputValue(sessionData.ends_at));
       setStatus(sessionData.status || "scheduled");
 
+      let reportData = null;
       if (reportRes.ok) {
-        setReport(await reportRes.json());
+        reportData = await reportRes.json();
+      }
+
+      let credentials = [];
+      if (credentialsRes.ok) {
+        const raw = await credentialsRes.json();
+        credentials = Array.isArray(raw) ? raw : raw.results || [];
+      }
+
+      if (reportData) {
+        setReport(
+          buildAttendanceLists(
+            reportData,
+            credentials,
+            sessionId,
+            sessionData.ends_at
+          )
+        );
       } else {
         setReport(null);
       }
@@ -320,10 +447,16 @@ export default function SessionDetail() {
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                       <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                        Absent
+                        {report.session_ended ? "Absent" : "Pending"}
                       </p>
-                      <p className="mt-1 text-2xl font-bold text-amber-600">
-                        {report.absent_count ?? 0}
+                      <p
+                        className={`mt-1 text-2xl font-bold ${
+                          report.session_ended ? "text-amber-600" : "text-slate-600"
+                        }`}
+                      >
+                        {report.session_ended
+                          ? report.absent_count ?? 0
+                          : report.pending_count ?? 0}
                       </p>
                     </div>
                   </div>
@@ -333,11 +466,19 @@ export default function SessionDetail() {
                     people={report.attended}
                     emptyLabel="No one has scanned in yet."
                   />
-                  <PeopleTable
-                    title="Absent"
-                    people={report.absent}
-                    emptyLabel="No absences — everyone expected has attended."
-                  />
+                  {report.session_ended ? (
+                    <PeopleTable
+                      title="Absent"
+                      people={report.absent}
+                      emptyLabel="No absences — everyone expected has attended."
+                    />
+                  ) : (
+                    <PeopleTable
+                      title="Pending (not scanned yet)"
+                      people={report.pending}
+                      emptyLabel="Everyone expected has already scanned in."
+                    />
+                  )}
                 </div>
               )}
             </div>

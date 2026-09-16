@@ -1,11 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { Html5QrcodeScanner, Html5QrcodeScanType } from "html5-qrcode";
 import {
   ArrowLeft,
   CheckCircle2,
   AlertCircle,
-  QrCode,
   Loader,
   BookOpen,
   Calendar,
@@ -34,7 +33,6 @@ export default function Scanner() {
   const [scanResult, setScanResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [manualCode, setManualCode] = useState("");
 
   const scannerRef = useRef(null);
   const processingRef = useRef(false);
@@ -93,7 +91,6 @@ export default function Scanner() {
     setSessions([]);
     setScanResult(null);
     setError(null);
-    setManualCode("");
   };
 
   const changeSession = () => {
@@ -101,7 +98,6 @@ export default function Scanner() {
     setSelectedSession(null);
     setScanResult(null);
     setError(null);
-    setManualCode("");
   };
 
   const processScan = async (credential) => {
@@ -161,8 +157,10 @@ export default function Scanner() {
       {
         fps: 10,
         qrbox: 300,
+        rememberLastUsedCamera: true,
+        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
       },
-      false
+      /* verbose= */ false
     );
 
     const onScanSuccess = (decodedText) => {
@@ -186,30 +184,23 @@ export default function Scanner() {
     };
   }, [step, scanResult, selectedSession]);
 
-  const handleManualSubmit = () => {
-    if (!manualCode.trim()) {
-      setError("Please enter a 6-digit code");
-      return;
-    }
-    if (manualCode.length !== 6) {
-      setError("Code must be exactly 6 digits");
-      return;
-    }
-    processScan(manualCode.trim());
-    setManualCode("");
-  };
-
   const handleReset = () => {
     setScanResult(null);
     setError(null);
-    setManualCode("");
     processingRef.current = false;
   };
 
   const renderResult = () => {
     const status = scanResult?.status;
     const message = scanResult?.message;
-    const employee = scanResult?.employee;
+    const person = scanResult?.employee || scanResult?.data || null;
+    const personType = scanResult?.type || person?.type || "member";
+    const typeLabel =
+      personType === "visitor"
+        ? "Visitor"
+        : personType === "substitute"
+          ? "Substitute"
+          : "Member";
 
     if (status === "SUCCESS") {
       return (
@@ -221,24 +212,38 @@ export default function Scanner() {
           </div>
           <h2 className="mb-2 text-2xl font-bold text-emerald-600">Attendance Marked</h2>
           <p className="mb-6 text-slate-600">{message || "First scan for this session."}</p>
-          {employee && (
+          {person && (
             <div className="mb-6 rounded-lg bg-slate-50 p-6 text-left">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="mb-1 text-xs font-medium text-slate-500">Name</p>
-                  <p className="text-lg font-semibold text-slate-800">{employee.name}</p>
+                  <p className="text-lg font-semibold text-slate-800">{person.name}</p>
+                </div>
+                <div>
+                  <p className="mb-1 text-xs font-medium text-slate-500">Type</p>
+                  <p className="text-sm font-medium text-slate-700">{typeLabel}</p>
                 </div>
                 <div>
                   <p className="mb-1 text-xs font-medium text-slate-500">Credential</p>
-                  <p className="text-sm text-slate-600">{employee.credential}</p>
+                  <p className="text-sm text-slate-600">{person.credential || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="mb-1 text-xs font-medium text-slate-500">
+                    {personType === "member" ? "Membership ID" : "For Member"}
+                  </p>
+                  <p className="text-sm text-slate-600">
+                    {personType === "member"
+                      ? person.membership_id || "N/A"
+                      : person.member_name || "N/A"}
+                  </p>
                 </div>
                 <div>
                   <p className="mb-1 text-xs font-medium text-slate-500">Email</p>
-                  <p className="text-sm text-slate-600">{employee.email || "N/A"}</p>
+                  <p className="text-sm text-slate-600">{person.email || "N/A"}</p>
                 </div>
                 <div>
-                  <p className="mb-1 text-xs font-medium text-slate-500">Membership ID</p>
-                  <p className="text-sm text-slate-600">{employee.membership_id}</p>
+                  <p className="mb-1 text-xs font-medium text-slate-500">Phone</p>
+                  <p className="text-sm text-slate-600">{person.phone || "N/A"}</p>
                 </div>
               </div>
             </div>
@@ -265,9 +270,13 @@ export default function Scanner() {
           <p className="mb-6 text-slate-600">
             {message || "This person has already marked attendance for this session."}
           </p>
-          {employee && (
+          {person && (
             <div className="mb-6 rounded-lg bg-slate-50 p-6">
-              <p className="text-lg font-semibold text-slate-800">{employee.name}</p>
+              <p className="text-lg font-semibold text-slate-800">{person.name}</p>
+              <p className="mt-1 text-sm text-slate-500">{typeLabel}</p>
+              {person.member_name && personType !== "member" && (
+                <p className="mt-1 text-sm text-slate-500">For: {person.member_name}</p>
+              )}
             </div>
           )}
           <button
@@ -292,11 +301,11 @@ export default function Scanner() {
           <p className="mb-6 text-slate-600">
             {message || "This credential belongs to a different chapter than this session."}
           </p>
-          {employee && (
+          {person && (
             <div className="mb-6 rounded-lg bg-slate-50 p-6">
-              <p className="text-lg font-semibold text-slate-800">{employee.name}</p>
-              {employee.chapter_name && (
-                <p className="mt-1 text-sm text-slate-500">Chapter: {employee.chapter_name}</p>
+              <p className="text-lg font-semibold text-slate-800">{person.name}</p>
+              {person.chapter_name && (
+                <p className="mt-1 text-sm text-slate-500">Chapter: {person.chapter_name}</p>
               )}
             </div>
           )}
@@ -361,10 +370,10 @@ export default function Scanner() {
           <div className="flex items-center gap-4">
             <Link
               to="/"
-              className="flex items-center gap-2 rounded-lg p-2 text-slate-600 hover:bg-slate-100"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[#2D5A5D]/40 hover:bg-[#2D5A5D]/5 hover:text-[#2D5A5D]"
             >
-              <ArrowLeft size={20} />
-              <span className="text-sm font-medium">Back to Portal</span>
+              <ArrowLeft size={16} />
+              Back to Portal
             </Link>
             <h1 className="text-2xl font-bold text-slate-800">QR Scanner</h1>
           </div>
@@ -374,36 +383,57 @@ export default function Scanner() {
 
       <main className="mx-auto max-w-2xl px-6 py-8">
         {(selectedChapter || selectedSession) && (
-          <div className="mb-6 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              {selectedChapter && (
-                <div className="flex items-center gap-2">
-                  <BookOpen size={14} className="text-[#2D5A5D]" />
-                  <span className="font-medium text-slate-800">{selectedChapter.name}</span>
+          <div className="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+                {selectedChapter && (
+                  <div className="inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
+                    <BookOpen size={15} className="shrink-0 text-[#2D5A5D]" />
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                        Chapter
+                      </p>
+                      <p className="truncate text-sm font-semibold text-slate-800">
+                        {selectedChapter.name}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {selectedSession && (
+                  <div className="inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
+                    <Calendar size={15} className="shrink-0 text-[#2D5A5D]" />
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                        Session
+                      </p>
+                      <p className="truncate text-sm font-semibold text-slate-800">
+                        {selectedSession.title || `Session #${selectedSession.id}`}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {selectedChapter && (
                   <button
                     type="button"
                     onClick={changeChapter}
-                    className="text-xs font-medium text-[#2D5A5D] hover:underline"
+                    className="inline-flex items-center justify-center rounded-lg border border-[#2D5A5D]/30 bg-white px-3 py-2 text-xs font-semibold text-[#2D5A5D] transition hover:bg-[#2D5A5D] hover:text-white"
                   >
-                    Change
+                    Change Chapter
                   </button>
-                </div>
-              )}
-              {selectedSession && (
-                <div className="flex items-center gap-2">
-                  <Calendar size={14} className="text-[#2D5A5D]" />
-                  <span className="font-medium text-slate-800">
-                    {selectedSession.title || `Session #${selectedSession.id}`}
-                  </span>
+                )}
+                {selectedSession && (
                   <button
                     type="button"
                     onClick={changeSession}
-                    className="text-xs font-medium text-[#2D5A5D] hover:underline"
+                    className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-[#2D5A5D]/40 hover:bg-[#2D5A5D]/5 hover:text-[#2D5A5D]"
                   >
-                    Change
+                    Change Session
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -433,10 +463,17 @@ export default function Scanner() {
                     <button
                       type="button"
                       onClick={() => selectChapter(ch)}
-                      className="flex w-full items-center justify-between rounded-lg border border-slate-200 px-4 py-3 text-left text-sm font-medium text-slate-800 transition hover:border-[#2D5A5D] hover:bg-[#2D5A5D]/5"
+                      className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-left transition hover:border-[#2D5A5D] hover:bg-[#2D5A5D]/5"
                     >
-                      <span>{ch.name}</span>
-                      <span className="text-xs text-slate-400">Select</span>
+                      <span className="flex items-center gap-3">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#2D5A5D]/10 text-[#2D5A5D]">
+                          <BookOpen size={16} />
+                        </span>
+                        <span className="text-sm font-semibold text-slate-800">{ch.name}</span>
+                      </span>
+                      <span className="rounded-lg bg-[#2D5A5D] px-3 py-1.5 text-xs font-semibold text-white">
+                        Select
+                      </span>
                     </button>
                   </li>
                 ))}
@@ -470,14 +507,24 @@ export default function Scanner() {
                     <button
                       type="button"
                       onClick={() => selectSession(session)}
-                      className="flex w-full flex-col rounded-lg border border-slate-200 px-4 py-3 text-left transition hover:border-[#2D5A5D] hover:bg-[#2D5A5D]/5"
+                      className="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-left transition hover:border-[#2D5A5D] hover:bg-[#2D5A5D]/5"
                     >
-                      <span className="text-sm font-medium text-slate-800">
-                        {session.title || `Session #${session.id}`}
+                      <span className="flex min-w-0 items-center gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#2D5A5D]/10 text-[#2D5A5D]">
+                          <Calendar size={16} />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-semibold text-slate-800">
+                            {session.title || `Session #${session.id}`}
+                          </span>
+                          <span className="mt-0.5 block text-xs text-slate-500">
+                            {formatDateTime(session.starts_at)}
+                            {session.status ? ` · ${session.status}` : ""}
+                          </span>
+                        </span>
                       </span>
-                      <span className="mt-1 text-xs text-slate-500">
-                        {formatDateTime(session.starts_at)}
-                        {session.status ? ` · ${session.status}` : ""}
+                      <span className="shrink-0 rounded-lg bg-[#2D5A5D] px-3 py-1.5 text-xs font-semibold text-white">
+                        Select
                       </span>
                     </button>
                   </li>
@@ -516,51 +563,6 @@ export default function Scanner() {
                       <p className="text-sm text-slate-600">Processing scan...</p>
                     </div>
                   )}
-                </div>
-
-                <div className="my-6 flex items-center gap-4">
-                  <div className="flex-1 border-t border-slate-200" />
-                  <span className="text-sm text-slate-500">OR</span>
-                  <div className="flex-1 border-t border-slate-200" />
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-                  <div className="mb-6 flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100">
-                      <QrCode size={20} className="text-amber-600" />
-                    </div>
-                    <h2 className="text-lg font-semibold text-slate-800">Manual Entry</h2>
-                  </div>
-                  <p className="mb-4 text-sm text-slate-600">
-                    If camera isn&apos;t working, enter 6-digit code manually:
-                  </p>
-                  <div className="flex gap-3">
-                    <input
-                      type="text"
-                      value={manualCode}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, "").slice(0, 6);
-                        setManualCode(value);
-                        setError(null);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && manualCode.length === 6 && !loading) {
-                          handleManualSubmit();
-                        }
-                      }}
-                      placeholder="e.g., 123456"
-                      maxLength={6}
-                      disabled={loading}
-                      className="flex-1 rounded-lg border border-slate-300 px-4 py-3 text-center text-lg font-semibold outline-none focus:border-[#2D5A5D] focus:ring-2 focus:ring-[#2D5A5D]/20 disabled:bg-slate-100"
-                    />
-                    <button
-                      onClick={handleManualSubmit}
-                      disabled={manualCode.length !== 6 || loading}
-                      className="rounded-lg bg-[#2D5A5D] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#234749] disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {loading ? "..." : "Submit"}
-                    </button>
-                  </div>
                 </div>
               </>
             ) : (
