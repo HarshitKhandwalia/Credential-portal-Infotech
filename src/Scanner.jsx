@@ -209,7 +209,14 @@ export default function Scanner() {
   const renderResult = () => {
     const status = scanResult?.status;
     const message = scanResult?.message;
-    const employee = scanResult?.employee;
+    const person = scanResult?.employee || scanResult?.data || null;
+    const personType = scanResult?.type || person?.type || "member";
+    const typeLabel =
+      personType === "visitor"
+        ? "Visitor"
+        : personType === "substitute"
+          ? "Substitute"
+          : "Member";
 
     if (status === "SUCCESS") {
       return (
@@ -221,24 +228,38 @@ export default function Scanner() {
           </div>
           <h2 className="mb-2 text-2xl font-bold text-emerald-600">Attendance Marked</h2>
           <p className="mb-6 text-slate-600">{message || "First scan for this session."}</p>
-          {employee && (
+          {person && (
             <div className="mb-6 rounded-lg bg-slate-50 p-6 text-left">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="mb-1 text-xs font-medium text-slate-500">Name</p>
-                  <p className="text-lg font-semibold text-slate-800">{employee.name}</p>
+                  <p className="text-lg font-semibold text-slate-800">{person.name}</p>
+                </div>
+                <div>
+                  <p className="mb-1 text-xs font-medium text-slate-500">Type</p>
+                  <p className="text-sm font-medium text-slate-700">{typeLabel}</p>
                 </div>
                 <div>
                   <p className="mb-1 text-xs font-medium text-slate-500">Credential</p>
-                  <p className="text-sm text-slate-600">{employee.credential}</p>
+                  <p className="text-sm text-slate-600">{person.credential || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="mb-1 text-xs font-medium text-slate-500">
+                    {personType === "member" ? "Membership ID" : "For Member"}
+                  </p>
+                  <p className="text-sm text-slate-600">
+                    {personType === "member"
+                      ? person.membership_id || "N/A"
+                      : person.member_name || "N/A"}
+                  </p>
                 </div>
                 <div>
                   <p className="mb-1 text-xs font-medium text-slate-500">Email</p>
-                  <p className="text-sm text-slate-600">{employee.email || "N/A"}</p>
+                  <p className="text-sm text-slate-600">{person.email || "N/A"}</p>
                 </div>
                 <div>
-                  <p className="mb-1 text-xs font-medium text-slate-500">Membership ID</p>
-                  <p className="text-sm text-slate-600">{employee.membership_id}</p>
+                  <p className="mb-1 text-xs font-medium text-slate-500">Phone</p>
+                  <p className="text-sm text-slate-600">{person.phone || "N/A"}</p>
                 </div>
               </div>
             </div>
@@ -265,9 +286,13 @@ export default function Scanner() {
           <p className="mb-6 text-slate-600">
             {message || "This person has already marked attendance for this session."}
           </p>
-          {employee && (
+          {person && (
             <div className="mb-6 rounded-lg bg-slate-50 p-6">
-              <p className="text-lg font-semibold text-slate-800">{employee.name}</p>
+              <p className="text-lg font-semibold text-slate-800">{person.name}</p>
+              <p className="mt-1 text-sm text-slate-500">{typeLabel}</p>
+              {person.member_name && personType !== "member" && (
+                <p className="mt-1 text-sm text-slate-500">For: {person.member_name}</p>
+              )}
             </div>
           )}
           <button
@@ -292,11 +317,11 @@ export default function Scanner() {
           <p className="mb-6 text-slate-600">
             {message || "This credential belongs to a different chapter than this session."}
           </p>
-          {employee && (
+          {person && (
             <div className="mb-6 rounded-lg bg-slate-50 p-6">
-              <p className="text-lg font-semibold text-slate-800">{employee.name}</p>
-              {employee.chapter_name && (
-                <p className="mt-1 text-sm text-slate-500">Chapter: {employee.chapter_name}</p>
+              <p className="text-lg font-semibold text-slate-800">{person.name}</p>
+              {person.chapter_name && (
+                <p className="mt-1 text-sm text-slate-500">Chapter: {person.chapter_name}</p>
               )}
             </div>
           )}

@@ -316,15 +316,147 @@ function EditEmployeeModal({ employee, chapters, onClose, onSave }) {
   );
 }
 
+function formatSessionOptionLabel(session) {
+  const title = session.title || `Session #${session.id}`;
+  let when = "";
+  if (session.starts_at) {
+    try {
+      when = new Date(session.starts_at).toLocaleString([], {
+        dateStyle: "short",
+        timeStyle: "short",
+      });
+    } catch {
+      when = session.starts_at;
+    }
+  }
+  const status = session.status
+    ? session.status.charAt(0).toUpperCase() + session.status.slice(1)
+    : "Scheduled";
+  return when ? `${title} · ${when} · ${status}` : `${title} · ${status}`;
+}
+
+function isEligibleScheduledSession(session) {
+  if (!session || session.status !== "scheduled" || !session.starts_at) return false;
+  const startsAt = new Date(session.starts_at);
+  if (Number.isNaN(startsAt.getTime())) return false;
+  return startsAt > new Date();
+}
+
+function childSessionTitle(child) {
+  return child.session_title || child.sessionTitle || child.session?.title || "N/A";
+}
+
+function childSessionId(child) {
+  if (child.session_id != null) return child.session_id;
+  if (child.sessionId != null) return child.sessionId;
+  if (typeof child.session === "object" && child.session?.id != null) {
+    return child.session.id;
+  }
+  if (child.session != null && typeof child.session !== "object") {
+    return child.session;
+  }
+  return null;
+}
+
+function parseApiError(responseData, fallback) {
+  const message =
+    responseData?.detail ||
+    responseData?.message ||
+    responseData?.error ||
+    (typeof responseData === "string" ? responseData : null) ||
+    fallback;
+  return typeof message === "string" ? message : JSON.stringify(message);
+}
+
+function ChildCredentialRow({
+  child,
+  type,
+  badgeClass,
+  badgeLabel,
+  parentId,
+  sendingKey,
+  deletingKey,
+  onSend,
+  onDelete,
+}) {
+  const displayName =
+    child.name ||
+    `${child.first_name || ""} ${child.last_name || ""}`.trim();
+  const actionKey = `${parentId}-${type}-${child.id}`;
+  const isSending = sendingKey === actionKey;
+  const isDeleting = deletingKey === actionKey;
+  const isBusy = isSending || isDeleting;
+  const sessionLabel = childSessionTitle(child);
+
+  return (
+    <tr className="bg-slate-50/70 text-xs text-slate-600 border-t border-slate-100">
+      <td className="py-2.5 pl-10 pr-3 font-medium text-slate-700">
+        ↳{" "}
+        <span
+          className={`rounded px-1.5 py-0.5 text-[10px] font-semibold mr-1 ${badgeClass}`}
+        >
+          {badgeLabel}
+        </span>
+        {displayName}
+      </td>
+      <td className="px-3 py-2.5" title={sessionLabel}>
+        {sessionLabel}
+      </td>
+      <td className="px-3 py-2.5">{child.phone || "N/A"}</td>
+      <td className="px-3 py-2.5">{child.email || "N/A"}</td>
+      <td className="px-3 py-2.5">{child.primary_credential || "QR"}</td>
+      <td className="px-3 py-2.5">
+        {child.secondary_credential || "Email"}
+      </td>
+      <td className="px-3 py-2.5">{child.sent_at || "N/A"}</td>
+      <td className="px-3 py-2.5 text-right">
+        <div className="inline-flex items-center justify-end gap-1.5">
+          <button
+            type="button"
+            onClick={() => onSend(parentId, child, type)}
+            disabled={isBusy}
+            className="inline-flex items-center gap-1 rounded-lg bg-[#2D5A5D] px-2 py-1 text-[10px] font-semibold text-white transition hover:bg-[#234749] disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap"
+          >
+            <Send size={11} />
+            {isSending ? "Sending..." : "Send Credential"}
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(parentId, child, type)}
+            disabled={isBusy}
+            className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-2 py-1 text-[10px] font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap"
+            title={`Delete ${badgeLabel}`}
+          >
+            <Trash2 size={11} />
+            {isDeleting ? "Deleting..." : "Delete"}
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
 // New Employee / Visitor / Substitute Modal Component
 function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
-  const { parentUserId, entryType } = modalConfig || {};
+  const {
+    parentUserId,
+    entryType,
+    chapterId: lockedChapterId,
+    chapterName: lockedChapterName,
+  } = modalConfig || {};
+  const isVisitorOrSubstitute = Boolean(entryType);
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [membershipId, setMembershipId] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [chapter, setChapter] = useState("");
+  const [chapter, setChapter] = useState(
+    isVisitorOrSubstitute && lockedChapterId != null ? String(lockedChapterId) : ""
+  );
+  const [sessionId, setSessionId] = useState("");
+  const [sessions, setSessions] = useState([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
   const [secondaryCredential, setSecondaryCredential] = useState("Email");
   const [submitting, setSubmitting] = useState(false);
   const [validationError, setValidationError] = useState("");
@@ -333,12 +465,74 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
     ? `New ${entryType.charAt(0).toUpperCase() + entryType.slice(1)} Credential`
     : "New User Credential";
 
+  const lockedChapterLabel =
+    lockedChapterName ||
+    chapters.find((c) => String(c.id) === String(lockedChapterId))?.name ||
+    (lockedChapterId != null ? `Chapter #${lockedChapterId}` : "");
+
+  useEffect(() => {
+    if (!isVisitorOrSubstitute) return;
+
+    if (lockedChapterId == null || lockedChapterId === "") {
+      setSessions([]);
+      setSessionId("");
+      setValidationError(
+        "This member has no chapter. Cannot create a visitor or substitute."
+      );
+      return;
+    }
+
+    let cancelled = false;
+    const loadSessions = async () => {
+      setLoadingSessions(true);
+      setSessionId("");
+      setValidationError("");
+      try {
+        const res = await fetch(
+          `${API_ROOT}/chapters/${lockedChapterId}/sessions/`
+        );
+        if (!res.ok) throw new Error(`Failed to load sessions (${res.status})`);
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : data.results || [];
+        const eligible = list.filter(isEligibleScheduledSession);
+        if (!cancelled) {
+          setSessions(eligible);
+          if (eligible.length === 0) {
+            setValidationError(
+              "No upcoming scheduled sessions for this chapter. Create a session before adding a visitor or substitute."
+            );
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        if (!cancelled) {
+          setSessions([]);
+          setValidationError("Failed to load sessions for this chapter.");
+        }
+      } finally {
+        if (!cancelled) setLoadingSessions(false);
+      }
+    };
+
+    loadSessions();
+    return () => {
+      cancelled = true;
+    };
+  }, [isVisitorOrSubstitute, lockedChapterId]);
+
   const hasContactMethod = email.trim() !== "" || phone.trim() !== "";
-  const canSubmit =
-    firstName.trim() !== "" &&
-    lastName.trim() !== "" &&
-    hasContactMethod &&
-    chapter !== "";
+  const canSubmit = isVisitorOrSubstitute
+    ? firstName.trim() !== "" &&
+      lastName.trim() !== "" &&
+      hasContactMethod &&
+      lockedChapterId != null &&
+      lockedChapterId !== "" &&
+      sessionId !== "" &&
+      !loadingSessions
+    : firstName.trim() !== "" &&
+      lastName.trim() !== "" &&
+      hasContactMethod &&
+      chapter !== "";
 
   const handleEmailChange = (e) => {
     const val = e.target.value;
@@ -371,9 +565,27 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
 
     if (phoneTrimmed && !/^\+?[0-9\s\-()]{7,15}$/.test(phoneTrimmed)) {
       setValidationError("Please enter a valid phone number.");
+      return;
     }
 
-    if (!chapter) {
+    if (isVisitorOrSubstitute) {
+      if (lockedChapterId == null || lockedChapterId === "") {
+        setValidationError(
+          "This member has no chapter. Cannot create a visitor or substitute."
+        );
+        return;
+      }
+      if (!sessionId) {
+        setValidationError("Please select a session.");
+        return;
+      }
+      if (sessions.length === 0) {
+        setValidationError(
+          "No upcoming scheduled sessions for this chapter. Create a session before adding a visitor or substitute."
+        );
+        return;
+      }
+    } else if (!chapter) {
       setValidationError("Please select a chapter.");
       return;
     }
@@ -381,9 +593,11 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
     setSubmitting(true);
     setValidationError("");
 
-    // Find Chapter Name to embed in frontend object immediately
     const selectedChapterObj = chapters.find(
-      (c) => String(c.id) === String(chapter)
+      (c) => String(c.id) === String(isVisitorOrSubstitute ? lockedChapterId : chapter)
+    );
+    const selectedSession = sessions.find(
+      (s) => String(s.id) === String(sessionId)
     );
 
     try {
@@ -391,19 +605,29 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         name: `${firstName.trim()} ${lastName.trim()}`,
-        membershipId: membershipId.trim(),
+        membershipId: isVisitorOrSubstitute ? "" : membershipId.trim(),
         email: emailTrimmed,
         phone: phoneTrimmed,
         primaryCredential: "QR",
-        secondaryCredential,
-        chapter: Number(chapter),
-        chapter_name: selectedChapterObj ? selectedChapterObj.name : "",
+        secondaryCredential: isVisitorOrSubstitute ? undefined : secondaryCredential,
+        chapter: Number(isVisitorOrSubstitute ? lockedChapterId : chapter),
+        chapter_name: isVisitorOrSubstitute
+          ? lockedChapterLabel
+          : selectedChapterObj
+            ? selectedChapterObj.name
+            : "",
         parentUserId,
         entryType,
+        sessionId: isVisitorOrSubstitute ? Number(sessionId) : undefined,
+        session_title: selectedSession
+          ? selectedSession.title || `Session #${selectedSession.id}`
+          : "",
       });
     } catch (err) {
       console.error("Failed to save:", err);
-      setValidationError("An error occurred while saving. Please try again.");
+      setValidationError(
+        err?.message || "An error occurred while saving. Please try again."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -478,42 +702,84 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
             </div>
           </div>
 
-          <div className="mt-4">
-            <label className="mb-1 block text-sm font-medium text-slate-700">
-              Membership ID
-            </label>
-            <input
-              type="text"
-              value={membershipId}
-              onChange={(e) => {
-                setMembershipId(e.target.value);
-                setValidationError("");
-              }}
-              placeholder="MEM-67890"
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
-            />
-          </div>
+          {!isVisitorOrSubstitute && (
+            <div className="mt-4">
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                Membership ID
+              </label>
+              <input
+                type="text"
+                value={membershipId}
+                onChange={(e) => {
+                  setMembershipId(e.target.value);
+                  setValidationError("");
+                }}
+                placeholder="MEM-67890"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+              />
+            </div>
+          )}
 
           <div className="mt-4">
             <label className="mb-1 block text-sm font-medium text-slate-700">
               Chapter <span className="text-red-500">*</span>
             </label>
-            <select
-              value={chapter}
-              onChange={(e) => {
-                setChapter(e.target.value);
-                setValidationError("");
-              }}
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
-            >
-              <option value="">Select chapter</option>
-              {chapters.map((ch) => (
-                <option key={ch.id} value={ch.id}>
-                  {ch.name}
-                </option>
-              ))}
-            </select>
+            {isVisitorOrSubstitute ? (
+              <input
+                type="text"
+                value={lockedChapterLabel}
+                readOnly
+                disabled
+                className="w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-500 outline-none"
+              />
+            ) : (
+              <select
+                value={chapter}
+                onChange={(e) => {
+                  setChapter(e.target.value);
+                  setValidationError("");
+                }}
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+              >
+                <option value="">Select chapter</option>
+                {chapters.map((ch) => (
+                  <option key={ch.id} value={ch.id}>
+                    {ch.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
+
+          {isVisitorOrSubstitute && (
+            <div className="mt-4">
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                Session <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={sessionId}
+                onChange={(e) => {
+                  setSessionId(e.target.value);
+                  setValidationError("");
+                }}
+                disabled={loadingSessions || sessions.length === 0}
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+              >
+                <option value="">
+                  {loadingSessions
+                    ? "Loading sessions..."
+                    : sessions.length === 0
+                      ? "No upcoming scheduled sessions"
+                      : "Select session"}
+                </option>
+                {sessions.map((session) => (
+                  <option key={session.id} value={session.id}>
+                    {formatSessionOptionLabel(session)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="mt-4">
             <label className="mb-1 block text-sm font-medium text-slate-700">
@@ -557,33 +823,35 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
             </span>
           </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
-                Primary Credential
-              </label>
-              <select
-                disabled
-                value="QR"
-                className="w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-500 outline-none"
-              >
-                <option value="QR">QR</option>
-              </select>
+          {!isVisitorOrSubstitute && (
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Primary Credential
+                </label>
+                <select
+                  disabled
+                  value="QR"
+                  className="w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-500 outline-none"
+                >
+                  <option value="QR">QR</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  MFA
+                </label>
+                <select
+                  value={secondaryCredential}
+                  onChange={(e) => setSecondaryCredential(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+                >
+                  <option value="Email">Email</option>
+                  <option value="SMS">SMS</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
-                MFA
-              </label>
-              <select
-                value={secondaryCredential}
-                onChange={(e) => setSecondaryCredential(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
-              >
-                <option value="Email">Email</option>
-                <option value="SMS">SMS</option>
-              </select>
-            </div>
-          </div>
+          )}
         </div>
 
         <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4">
@@ -618,6 +886,8 @@ export default function EmployeePortal() {
   const [newModalConfig, setNewModalConfig] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
   const [expandedUserIds, setExpandedUserIds] = useState([]);
+  const [sendingChildKey, setSendingChildKey] = useState(null);
+  const [deletingChildKey, setDeletingChildKey] = useState(null);
 
   const toggleExpandUser = (id) => {
     setExpandedUserIds((prev) =>
@@ -706,6 +976,137 @@ export default function EmployeePortal() {
     });
   }, [employees, search]);
 
+  const handleSendVisitorSubstitute = async (parentId, child, type) => {
+    const sessionId = childSessionId(child);
+    if (!sessionId) {
+      alert("Session is missing for this record. Cannot send credential.");
+      return;
+    }
+    if (!child.id) {
+      alert("Record id is missing. Cannot send credential.");
+      return;
+    }
+
+    const sendKey = `${parentId}-${type}-${child.id}`;
+    setSendingChildKey(sendKey);
+
+    try {
+      const response = await fetch(
+        `${API_ROOT}/sessions/${sessionId}/visitor-substitute/${child.id}/send/`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type }),
+        }
+      );
+
+      const responseData = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        alert(
+          parseApiError(
+            responseData,
+            `Failed to send ${type} credential (${response.status}).`
+          )
+        );
+        return;
+      }
+
+      setEmployees((prev) =>
+        prev.map((emp) => {
+          if (String(emp.id) !== String(parentId)) return emp;
+          const key = type === "visitor" ? "visitors" : "substitutes";
+          return {
+            ...emp,
+            [key]: (emp[key] || []).map((item) =>
+              String(item.id) === String(child.id)
+                ? {
+                    ...item,
+                    ...responseData,
+                    sent_at:
+                      responseData.sent_at ||
+                      responseData.sentAt ||
+                      item.sent_at,
+                    status: responseData.status || item.status,
+                  }
+                : item
+            ),
+          };
+        })
+      );
+
+      alert(
+        responseData.email_sent === false
+          ? "Credential generated, but delivery may have failed."
+          : "Credential sent successfully!"
+      );
+    } catch (error) {
+      console.error("Error sending visitor/substitute credential:", error);
+      alert("Failed to send credential. Please check your connection.");
+    } finally {
+      setSendingChildKey(null);
+    }
+  };
+
+  const handleDeleteVisitorSubstitute = async (parentId, child, type) => {
+    const sessionId = childSessionId(child);
+    if (!sessionId) {
+      alert("Session is missing for this record. Cannot delete.");
+      return;
+    }
+    if (!child.id) {
+      alert("Record id is missing. Cannot delete.");
+      return;
+    }
+
+    const label = type === "substitute" ? "substitute" : "visitor";
+    if (!window.confirm(`Delete this ${label} credential?`)) return;
+
+    const deleteKey = `${parentId}-${type}-${child.id}`;
+    setDeletingChildKey(deleteKey);
+
+    try {
+      const response = await fetch(
+        `${API_ROOT}/sessions/${sessionId}/visitor-substitute/${child.id}/`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type }),
+        }
+      );
+
+      const responseData = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        alert(
+          parseApiError(
+            responseData,
+            `Failed to delete ${label} (${response.status}).`
+          )
+        );
+        return;
+      }
+
+      setEmployees((prev) =>
+        prev.map((emp) => {
+          if (String(emp.id) !== String(parentId)) return emp;
+          const key = type === "visitor" ? "visitors" : "substitutes";
+          return {
+            ...emp,
+            [key]: (emp[key] || []).filter(
+              (item) => String(item.id) !== String(child.id)
+            ),
+          };
+        })
+      );
+    } catch (error) {
+      console.error("Error deleting visitor/substitute:", error);
+      alert("Failed to delete. Please check your connection.");
+    } finally {
+      setDeletingChildKey(null);
+    }
+  };
+
   const handleSendInvite = async (id, updatedDetails) => {
     const employee = employees.find((e) => e.id === id);
     if (!employee) {
@@ -789,6 +1190,84 @@ export default function EmployeePortal() {
   };
 
   const handleAddEmployee = async (formData) => {
+    // Visitor / Substitute: session-scoped create endpoint
+    if (formData.parentUserId && formData.entryType) {
+      if (!formData.sessionId) {
+        throw new Error("Please select a session.");
+      }
+
+      const payload = {
+        type: formData.entryType === "substitute" ? "substitute" : "visitor",
+        name: formData.name,
+        member_id: formData.parentUserId,
+        email: formData.email || null,
+        phone: formData.phone || null,
+      };
+
+      const response = await fetch(
+        `${API_ROOT}/sessions/${formData.sessionId}/visitor-substitute/create/`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const responseData = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message =
+          responseData.detail ||
+          responseData.message ||
+          responseData.error ||
+          (typeof responseData === "string" ? responseData : null) ||
+          `Failed to create ${formData.entryType} (${response.status}).`;
+        throw new Error(
+          typeof message === "string" ? message : JSON.stringify(message)
+        );
+      }
+
+      const newEntry = {
+        ...responseData,
+        name: responseData.name || formData.name,
+        first_name: responseData.first_name || formData.firstName,
+        last_name: responseData.last_name || formData.lastName,
+        email: responseData.email ?? formData.email,
+        phone: responseData.phone ?? formData.phone,
+        chapter: responseData.chapter ?? formData.chapter,
+        chapter_name: responseData.chapter_name || formData.chapter_name,
+        session_id: responseData.session_id ?? formData.sessionId,
+        session_title:
+          responseData.session_title ||
+          responseData.session?.title ||
+          formData.session_title,
+        entry_type: formData.entryType,
+        primary_credential: responseData.primary_credential || "QR",
+        secondary_credential: responseData.secondary_credential || "Email",
+      };
+
+      setEmployees((prev) =>
+        prev.map((emp) => {
+          if (String(emp.id) !== String(formData.parentUserId)) return emp;
+          const key =
+            formData.entryType === "visitor" ? "visitors" : "substitutes";
+          const existingList = emp[key] || [];
+          return {
+            ...emp,
+            [key]: [...existingList, newEntry],
+          };
+        })
+      );
+
+      setExpandedUserIds((prev) =>
+        prev.includes(formData.parentUserId)
+          ? prev
+          : [...prev, formData.parentUserId]
+      );
+      setNewModalConfig(null);
+      return;
+    }
+
+    // Normal member invite
     const payload = {
       name: formData.name,
       first_name: formData.firstName,
@@ -800,60 +1279,36 @@ export default function EmployeePortal() {
       secondary_credential: formData.secondaryCredential || "Email",
       status: "not_invited",
       chapter: formData.chapter,
-      parent_user: formData.parentUserId || null,
     };
 
-    try {
-      const response = await fetch(API_BASE_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    const response = await fetch(API_BASE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
-      let newEntry = {
-        id: Date.now(),
-        ...payload,
-        chapter_name: formData.chapter_name,
-      };
-
-      if (response.ok) {
-        const responseData = await response.json();
-        newEntry = { ...newEntry, ...responseData };
-      }
-
-      // Explicit Check: If adding a Visitor or Substitute, append to parent array ONLY
-      if (formData.parentUserId && formData.entryType) {
-        setEmployees((prev) =>
-          prev.map((emp) => {
-            if (String(emp.id) === String(formData.parentUserId)) {
-              const key =
-                formData.entryType === "visitor" ? "visitors" : "substitutes";
-              const existingList = emp[key] || [];
-              return {
-                ...emp,
-                [key]: [...existingList, newEntry],
-              };
-            }
-            return emp;
-          })
-        );
-
-        // Auto-expand the arrow on the parent user so child details show up
-        setExpandedUserIds((prev) =>
-          prev.includes(formData.parentUserId)
-            ? prev
-            : [...prev, formData.parentUserId]
-        );
-      } else {
-        // Only append to root level if creating an independent User
-        setEmployees((prev) => [newEntry, ...prev]);
-      }
-
-      setNewModalConfig(null);
-    } catch (error) {
-      console.error("Submission failed:", error);
-      alert("Submission failed. Please check your connection.");
+    const responseData = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const message =
+        responseData.detail ||
+        responseData.message ||
+        responseData.error ||
+        `Failed to create credential (${response.status}).`;
+      throw new Error(
+        typeof message === "string" ? message : JSON.stringify(message)
+      );
     }
+
+    const newEntry = {
+      ...payload,
+      ...responseData,
+      chapter_name: responseData.chapter_name || formData.chapter_name,
+      visitors: [],
+      substitutes: [],
+    };
+
+    setEmployees((prev) => [newEntry, ...prev]);
+    setNewModalConfig(null);
   };
 
   const handleUpdateEmployee = async (id, updatedFields) => {
@@ -1101,6 +1556,9 @@ export default function EmployeePortal() {
                                       setNewModalConfig({
                                         parentUserId: employee.id,
                                         entryType: "visitor",
+                                        chapterId: employee.chapter,
+                                        chapterName:
+                                          employee.chapter_name || "",
                                       });
                                       setOpenMenuId(null);
                                     }}
@@ -1113,6 +1571,9 @@ export default function EmployeePortal() {
                                       setNewModalConfig({
                                         parentUserId: employee.id,
                                         entryType: "substitute",
+                                        chapterId: employee.chapter,
+                                        chapterName:
+                                          employee.chapter_name || "",
                                       });
                                       setOpenMenuId(null);
                                     }}
@@ -1149,76 +1610,34 @@ export default function EmployeePortal() {
                       {/* VISITOR & SUBSTITUTE NESTED SUB-ROWS */}
                       {expandedUserIds.includes(employee.id) && (
                         <>
-                          {/* Visitors */}
                           {employee.visitors?.map((visitor) => (
-                            <tr
+                            <ChildCredentialRow
                               key={`v-${visitor.id}`}
-                              className="bg-slate-50/70 text-xs text-slate-600 border-t border-slate-100"
-                            >
-                              <td className="py-2.5 pl-10 pr-3 font-medium text-slate-700">
-                                ↳{" "}
-                                <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 mr-1">
-                                  Visitor
-                                </span>
-                                {visitor.name ||
-                                  `${visitor.first_name || ""} ${visitor.last_name || ""}`.trim()}
-                              </td>
-                              <td className="px-3 py-2.5">
-                                {visitor.chapter_name || visitor.chapter || "—"}
-                              </td>
-                              <td className="px-3 py-2.5">
-                                {visitor.phone || "N/A"}
-                              </td>
-                              <td className="px-3 py-2.5">
-                                {visitor.email || "N/A"}
-                              </td>
-                              <td className="px-3 py-2.5">
-                                {visitor.primary_credential || "QR"}
-                              </td>
-                              <td className="px-3 py-2.5">
-                                {visitor.secondary_credential || "Email"}
-                              </td>
-                              <td className="px-3 py-2.5">
-                                {visitor.sent_at || "N/A"}
-                              </td>
-                              <td className="px-3 py-2.5 text-right"></td>
-                            </tr>
+                              child={visitor}
+                              type="visitor"
+                              badgeClass="bg-blue-100 text-blue-700"
+                              badgeLabel="Visitor"
+                              parentId={employee.id}
+                              sendingKey={sendingChildKey}
+                              deletingKey={deletingChildKey}
+                              onSend={handleSendVisitorSubstitute}
+                              onDelete={handleDeleteVisitorSubstitute}
+                            />
                           ))}
 
-                          {/* Substitutes */}
                           {employee.substitutes?.map((sub) => (
-                            <tr
+                            <ChildCredentialRow
                               key={`s-${sub.id}`}
-                              className="bg-slate-50/70 text-xs text-slate-600 border-t border-slate-100"
-                            >
-                              <td className="py-2.5 pl-10 pr-3 font-medium text-slate-700">
-                                ↳{" "}
-                                <span className="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-semibold text-purple-700 mr-1">
-                                  Substitute
-                                </span>
-                                {sub.name ||
-                                  `${sub.first_name || ""} ${sub.last_name || ""}`.trim()}
-                              </td>
-                              <td className="px-3 py-2.5">
-                                {sub.chapter_name || sub.chapter || "—"}
-                              </td>
-                              <td className="px-3 py-2.5">
-                                {sub.phone || "N/A"}
-                              </td>
-                              <td className="px-3 py-2.5">
-                                {sub.email || "N/A"}
-                              </td>
-                              <td className="px-3 py-2.5">
-                                {sub.primary_credential || "QR"}
-                              </td>
-                              <td className="px-3 py-2.5">
-                                {sub.secondary_credential || "Email"}
-                              </td>
-                              <td className="px-3 py-2.5">
-                                {sub.sent_at || "N/A"}
-                              </td>
-                              <td className="px-3 py-2.5 text-right"></td>
-                            </tr>
+                              child={sub}
+                              type="substitute"
+                              badgeClass="bg-purple-100 text-purple-700"
+                              badgeLabel="Substitute"
+                              parentId={employee.id}
+                              sendingKey={sendingChildKey}
+                              deletingKey={deletingChildKey}
+                              onSend={handleSendVisitorSubstitute}
+                              onDelete={handleDeleteVisitorSubstitute}
+                            />
                           ))}
                         </>
                       )}
