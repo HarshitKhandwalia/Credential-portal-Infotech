@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 
 const links = [
-  { to: "/", label: "Credentials", end: true },
+  { to: "/", label: "Users", end: true },
   { to: "/chapters", label: "Chapters" },
   { to: "/scanner", label: "Scanner" },
 ];
