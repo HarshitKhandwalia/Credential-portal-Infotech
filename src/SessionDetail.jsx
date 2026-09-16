@@ -32,51 +32,114 @@ function formatDateTime(iso) {
 function downloadCSV(report, sessionTitle) {
   if (!report) return;
 
-  // Prepare CSV rows
-  const headers = ["First Name", "Last Name", "Phone", "Email", "Scanned At"];
+  const headers = ["Type", "First Name", "Last Name", "Phone", "Email", "Scanned At"];
   const rows = [];
 
-  // Add attended people
-  if (report.attended && report.attended.length > 0) {
-    report.attended.forEach((person) => {
-      const [firstName, ...lastNameParts] = person.name.split(" ");
-      const lastName = lastNameParts.join(" ");
-      rows.push([
-        firstName || "",
-        lastName || "",
-        person.phone || "",
-        person.email || "",
-        new Date(person.scanned_at || Date.now()).toLocaleString(),
-      ]);
-    });
+  // Add members
+  if (report.members) {
+    if (report.members.attended && report.members.attended.length > 0) {
+      report.members.attended.forEach((person) => {
+        const [firstName, ...lastNameParts] = person.name.split(" ");
+        const lastName = lastNameParts.join(" ");
+        rows.push([
+          "Member",
+          firstName || "",
+          lastName || "",
+          person.phone || "",
+          person.email || "",
+          new Date(person.scanned_at || Date.now()).toLocaleString(),
+        ]);
+      });
+    }
+    if (report.members.absent && report.members.absent.length > 0) {
+      report.members.absent.forEach((person) => {
+        const [firstName, ...lastNameParts] = person.name.split(" ");
+        const lastName = lastNameParts.join(" ");
+        rows.push([
+          "Member",
+          firstName || "",
+          lastName || "",
+          person.phone || "",
+          person.email || "",
+          "",
+        ]);
+      });
+    }
   }
 
-  // Add absent people (with blank scanned_at)
-  if (report.absent && report.absent.length > 0) {
-    report.absent.forEach((person) => {
-      const [firstName, ...lastNameParts] = person.name.split(" ");
-      const lastName = lastNameParts.join(" ");
-      rows.push([
-        firstName || "",
-        lastName || "",
-        person.phone || "",
-        person.email || "",
-        "", // Blank for absent
-      ]);
-    });
+  // Add visitors
+  if (report.visitors) {
+    if (report.visitors.attended && report.visitors.attended.length > 0) {
+      report.visitors.attended.forEach((person) => {
+        const [firstName, ...lastNameParts] = person.name.split(" ");
+        const lastName = lastNameParts.join(" ");
+        rows.push([
+          "Visitor",
+          firstName || "",
+          lastName || "",
+          person.phone || "",
+          person.email || "",
+          new Date(person.scanned_at || Date.now()).toLocaleString(),
+        ]);
+      });
+    }
+    if (report.visitors.absent && report.visitors.absent.length > 0) {
+      report.visitors.absent.forEach((person) => {
+        const [firstName, ...lastNameParts] = person.name.split(" ");
+        const lastName = lastNameParts.join(" ");
+        rows.push([
+          "Visitor",
+          firstName || "",
+          lastName || "",
+          person.phone || "",
+          person.email || "",
+          "",
+        ]);
+      });
+    }
   }
 
-  // Create CSV content
+  // Add substitutes
+  if (report.substitutes) {
+    if (report.substitutes.attended && report.substitutes.attended.length > 0) {
+      report.substitutes.attended.forEach((person) => {
+        const [firstName, ...lastNameParts] = person.name.split(" ");
+        const lastName = lastNameParts.join(" ");
+        rows.push([
+          "Substitute",
+          firstName || "",
+          lastName || "",
+          person.phone || "",
+          person.email || "",
+          new Date(person.scanned_at || Date.now()).toLocaleString(),
+        ]);
+      });
+    }
+    if (report.substitutes.absent && report.substitutes.absent.length > 0) {
+      report.substitutes.absent.forEach((person) => {
+        const [firstName, ...lastNameParts] = person.name.split(" ");
+        const lastName = lastNameParts.join(" ");
+        rows.push([
+          "Substitute",
+          firstName || "",
+          lastName || "",
+          person.phone || "",
+          person.email || "",
+          "",
+        ]);
+      });
+    }
+  }
+
   const csvContent = [
     headers.join(","),
     ...rows.map((row) =>
       row
-        .map((cell) => `"${String(cell).replace(/"/g, '""')}"`) // Escape quotes
+        .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
         .join(",")
     ),
   ].join("\n");
 
-  // Download
   const blob = new Blob([csvContent], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -365,43 +428,96 @@ export default function SessionDetail() {
                 </div>
               ) : (
                 <div className="space-y-6">
+                  {/* Summary Cards */}
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                       <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                        Expected
+                        Total Expected
                       </p>
                       <p className="mt-1 text-2xl font-bold text-slate-800">
-                        {report.expected_count ?? 0}
+                        {report.summary?.total_expected ?? 0}
                       </p>
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                       <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                        Attended
+                        Total Attended
                       </p>
                       <p className="mt-1 text-2xl font-bold text-emerald-600">
-                        {report.attended_count ?? 0}
+                        {report.summary?.total_attended ?? 0}
                       </p>
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                       <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                        Absent
+                        Total Absent
                       </p>
                       <p className="mt-1 text-2xl font-bold text-amber-600">
-                        {report.absent_count ?? 0}
+                        {report.summary?.total_absent ?? 0}
                       </p>
                     </div>
                   </div>
 
-                  <PeopleTable
-                    title="Attended"
-                    people={report.attended}
-                    emptyLabel="No one has scanned in yet."
-                  />
-                  <PeopleTable
-                    title="Absent"
-                    people={report.absent}
-                    emptyLabel="No absences — everyone expected has attended."
-                  />
+                  {/* Members Section */}
+                  {report.members && (
+                    <div>
+                      <h3 className="mb-3 text-base font-semibold text-slate-700">
+                        Members ({report.members.count})
+                      </h3>
+                      <div className="space-y-3">
+                        <PeopleTable
+                          title={`Attended (${report.members.attended_count})`}
+                          people={report.members.attended}
+                          emptyLabel="No members attended."
+                        />
+                        <PeopleTable
+                          title={`Absent (${report.members.absent_count})`}
+                          people={report.members.absent}
+                          emptyLabel="No absent members."
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Visitors Section */}
+                  {report.visitors && report.visitors.count > 0 && (
+                    <div>
+                      <h3 className="mb-3 text-base font-semibold text-slate-700">
+                        Visitors ({report.visitors.count})
+                      </h3>
+                      <div className="space-y-3">
+                        <PeopleTable
+                          title={`Attended (${report.visitors.attended_count})`}
+                          people={report.visitors.attended}
+                          emptyLabel="No visitors attended."
+                        />
+                        <PeopleTable
+                          title={`Absent (${report.visitors.absent_count})`}
+                          people={report.visitors.absent}
+                          emptyLabel="No absent visitors."
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Substitutes Section */}
+                  {report.substitutes && report.substitutes.count > 0 && (
+                    <div>
+                      <h3 className="mb-3 text-base font-semibold text-slate-700">
+                        Substitutes ({report.substitutes.count})
+                      </h3>
+                      <div className="space-y-3">
+                        <PeopleTable
+                          title={`Attended (${report.substitutes.attended_count})`}
+                          people={report.substitutes.attended}
+                          emptyLabel="No substitutes attended."
+                        />
+                        <PeopleTable
+                          title={`Absent (${report.substitutes.absent_count})`}
+                          people={report.substitutes.absent}
+                          emptyLabel="No absent substitutes."
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
