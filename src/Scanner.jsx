@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   CheckCircle2,
   AlertCircle,
-  QrCode,
   Loader,
   BookOpen,
   Calendar,
@@ -34,7 +33,6 @@ export default function Scanner() {
   const [scanResult, setScanResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [manualCode, setManualCode] = useState("");
 
   const scannerRef = useRef(null);
   const processingRef = useRef(false);
@@ -93,7 +91,6 @@ export default function Scanner() {
     setSessions([]);
     setScanResult(null);
     setError(null);
-    setManualCode("");
   };
 
   const changeSession = () => {
@@ -101,7 +98,6 @@ export default function Scanner() {
     setSelectedSession(null);
     setScanResult(null);
     setError(null);
-    setManualCode("");
   };
 
   const processScan = async (credential) => {
@@ -186,23 +182,9 @@ export default function Scanner() {
     };
   }, [step, scanResult, selectedSession]);
 
-  const handleManualSubmit = () => {
-    if (!manualCode.trim()) {
-      setError("Please enter a 6-digit code");
-      return;
-    }
-    if (manualCode.length !== 6) {
-      setError("Code must be exactly 6 digits");
-      return;
-    }
-    processScan(manualCode.trim());
-    setManualCode("");
-  };
-
   const handleReset = () => {
     setScanResult(null);
     setError(null);
-    setManualCode("");
     processingRef.current = false;
   };
 
@@ -541,51 +523,6 @@ export default function Scanner() {
                       <p className="text-sm text-slate-600">Processing scan...</p>
                     </div>
                   )}
-                </div>
-
-                <div className="my-6 flex items-center gap-4">
-                  <div className="flex-1 border-t border-slate-200" />
-                  <span className="text-sm text-slate-500">OR</span>
-                  <div className="flex-1 border-t border-slate-200" />
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-                  <div className="mb-6 flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100">
-                      <QrCode size={20} className="text-amber-600" />
-                    </div>
-                    <h2 className="text-lg font-semibold text-slate-800">Manual Entry</h2>
-                  </div>
-                  <p className="mb-4 text-sm text-slate-600">
-                    If camera isn&apos;t working, enter 6-digit code manually:
-                  </p>
-                  <div className="flex gap-3">
-                    <input
-                      type="text"
-                      value={manualCode}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, "").slice(0, 6);
-                        setManualCode(value);
-                        setError(null);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && manualCode.length === 6 && !loading) {
-                          handleManualSubmit();
-                        }
-                      }}
-                      placeholder="e.g., 123456"
-                      maxLength={6}
-                      disabled={loading}
-                      className="flex-1 rounded-lg border border-slate-300 px-4 py-3 text-center text-lg font-semibold outline-none focus:border-[#2D5A5D] focus:ring-2 focus:ring-[#2D5A5D]/20 disabled:bg-slate-100"
-                    />
-                    <button
-                      onClick={handleManualSubmit}
-                      disabled={manualCode.length !== 6 || loading}
-                      className="rounded-lg bg-[#2D5A5D] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#234749] disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {loading ? "..." : "Submit"}
-                    </button>
-                  </div>
                 </div>
               </>
             ) : (
