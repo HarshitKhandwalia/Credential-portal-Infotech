@@ -387,6 +387,17 @@ function ChildCredentialRow({
   const isDeleting = deletingKey === actionKey;
   const isBusy = isSending || isDeleting;
   const sessionLabel = childSessionTitle(child);
+  const rawSentAt =
+    child.sent_at ||
+    child.sentAt ||
+    child.date_sent ||
+    child.dateSent;
+  const sentAtDisplay = rawSentAt
+    ? new Date(rawSentAt).toLocaleString([], {
+        dateStyle: "short",
+        timeStyle: "short",
+      })
+    : "N/A";
 
   return (
     <tr className="bg-slate-50/70 text-xs text-slate-600 border-t border-slate-100">
@@ -408,7 +419,9 @@ function ChildCredentialRow({
       <td className="px-3 py-2.5">
         {child.secondary_credential || "Email"}
       </td>
-      <td className="px-3 py-2.5">{child.sent_at || "N/A"}</td>
+      <td className="px-3 py-2.5" title={sentAtDisplay}>
+        {sentAtDisplay}
+      </td>
       <td className="px-3 py-2.5 text-right">
         <div className="inline-flex items-center justify-end gap-1.5">
           <button
