@@ -418,7 +418,7 @@ function ChildCredentialRow({
             className="inline-flex items-center gap-1 rounded-lg bg-[#2D5A5D] px-2 py-1 text-[10px] font-semibold text-white transition hover:bg-[#234749] disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap"
           >
             <Send size={11} />
-            {isSending ? "Sending..." : "Send Credential"}
+            {isSending ? "Sending..." : "Send Pass"}
           </button>
           <button
             type="button"
@@ -979,11 +979,11 @@ export default function EmployeePortal() {
   const handleSendVisitorSubstitute = async (parentId, child, type) => {
     const sessionId = childSessionId(child);
     if (!sessionId) {
-      alert("Session is missing for this record. Cannot send credential.");
+      alert("Session is missing for this record. Cannot send Pass.");
       return;
     }
     if (!child.id) {
-      alert("Record id is missing. Cannot send credential.");
+      alert("Record id is missing. Cannot send Pass.");
       return;
     }
 
@@ -1042,7 +1042,7 @@ export default function EmployeePortal() {
       );
     } catch (error) {
       console.error("Error sending visitor/substitute credential:", error);
-      alert("Failed to send credential. Please check your connection.");
+      alert("Failed to send Pass. Please check your connection.");
     } finally {
       setSendingChildKey(null);
     }
@@ -1179,12 +1179,12 @@ export default function EmployeePortal() {
         responseData.detail ||
         responseData.message ||
         responseData.error ||
-        `Failed to send credential (${response.status}).`;
+        `Failed to send Pass (${response.status}).`;
       alert(errorMessage);
       return false;
     } catch (error) {
       console.error("Error triggering invite:", error);
-      alert("Failed to send credential. Please check your connection.");
+      alert("Failed to send Pass. Please check your connection.");
       return false;
     }
   };
