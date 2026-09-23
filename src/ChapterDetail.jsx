@@ -4,6 +4,7 @@ import { Plus, ArrowLeft, X, Calendar, Repeat } from "lucide-react";
 import logo from "./assets/logoEI.jpeg";
 import { API_ROOT } from "./config";
 import PortalNav from "./PortalNav";
+import { toast } from "./toast";
 
 function localInputToIso(localValue) {
   if (!localValue) return null;
@@ -357,7 +358,7 @@ export default function ChapterDetail() {
       setSessions(Array.isArray(sessionsData) ? sessionsData : sessionsData.results || []);
     } catch (err) {
       console.error(err);
-      alert("Failed to load chapter details.");
+      toast.error("Failed to load chapter details.");
     } finally {
       setLoading(false);
     }

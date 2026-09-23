@@ -4,6 +4,7 @@ import { Plus, Edit, Trash2, Archive, X, BookOpen } from "lucide-react";
 import logo from "./assets/logoEI.jpeg";
 import { API_ROOT } from "./config";
 import PortalNav from "./PortalNav";
+import { toast } from "./toast";
 
 function ChapterModal({ chapter, onClose, onSave }) {
   const [name, setName] = useState(chapter?.name || "");
@@ -150,7 +151,7 @@ export default function Chapters() {
       setChapters(Array.isArray(data) ? data : data.results || []);
     } catch (err) {
       console.error(err);
-      alert("Failed to load chapters. Please check your connection.");
+      toast.error("Failed to load chapters. Please check your connection.");
     } finally {
       setLoading(false);
     }
@@ -202,7 +203,7 @@ export default function Chapters() {
       await fetchChapters();
     } catch (err) {
       console.error(err);
-      alert("Failed to archive chapter.");
+      toast.error("Failed to archive chapter.");
     }
   };
 
@@ -218,7 +219,7 @@ export default function Chapters() {
       await fetchChapters();
     } catch (err) {
       console.error(err);
-      alert("Failed to delete chapter.");
+      toast.error("Failed to delete chapter.");
     }
   };
 

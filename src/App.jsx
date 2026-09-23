@@ -6,10 +6,12 @@ import GoogleWalletPage from "./GoogleWalletPage";
 import Chapters from "./Chapters";
 import ChapterDetail from "./ChapterDetail";
 import SessionDetail from "./SessionDetail";
+import { Toaster } from "./toast";
 
 export default function App() {
   return (
     <BrowserRouter>
+      <Toaster />
       <Routes>
         <Route path="/" element={<EmployeePortal />} />
         <Route path="/chapters" element={<Chapters />} />

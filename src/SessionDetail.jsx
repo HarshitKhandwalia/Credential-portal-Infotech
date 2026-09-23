@@ -4,6 +4,7 @@ import { ArrowLeft, Trash2, RefreshCw } from "lucide-react";
 import logo from "./assets/logoEI.jpeg";
 import { API_ROOT } from "./config";
 import PortalNav from "./PortalNav";
+import { toast } from "./toast";
 
 function toLocalInputValue(iso) {
   if (!iso) return "";
@@ -235,7 +236,7 @@ export default function SessionDetail() {
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to load session.");
+      toast.error("Failed to load session.");
     } finally {
       setLoading(false);
     }
@@ -296,7 +297,7 @@ export default function SessionDetail() {
       navigate(session?.chapter ? `/chapters/${session.chapter}` : "/chapters");
     } catch (err) {
       console.error(err);
-      alert("Failed to delete session.");
+      toast.error("Failed to delete session.");
     }
   };
 

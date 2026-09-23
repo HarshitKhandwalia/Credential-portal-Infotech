@@ -18,9 +18,10 @@ import {
 import logo from "./assets/logoEI.jpeg";
 import { API_BASE_URL, API_ROOT } from "./config";
 import PortalNav from "./PortalNav";
+import { toast } from "./toast";
 
 // Send Invite Modal Component
-function SendInviteModal({ employee, onClose, onSend }) {
+function SendInviteModal({ employee, onClose, onSend, lockContacts = false }) {
   const [useEmail, setUseEmail] = useState(!!employee.email);
   const [useSms, setUseSms] = useState(!employee.email);
   const [email, setEmail] = useState(employee.email || "");
@@ -31,11 +32,15 @@ function SendInviteModal({ employee, onClose, onSend }) {
 
   const handleSend = async () => {
     if (!canSend) return;
+    const channels = [];
+    if (useEmail) channels.push("email");
+    if (useSms) channels.push("whatsapp");
     setSending(true);
     try {
       await onSend(employee.id, {
         email: useEmail ? email : "",
         phone: useSms ? phone : "",
+        channels,
       });
     } finally {
       setSending(false);
@@ -78,7 +83,9 @@ function SendInviteModal({ employee, onClose, onSend }) {
 
         <div className="px-6 py-6">
           <p className="mb-4 text-sm text-slate-500">
-            Select delivery methods and verify contact details below before sending:
+            {lockContacts
+              ? "Select delivery methods. Email and phone come from the saved record."
+              : "Select delivery methods and verify contact details below before sending:"}
           </p>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -108,7 +115,8 @@ function SendInviteModal({ employee, onClose, onSend }) {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={!useEmail}
+                disabled={!useEmail || lockContacts}
+                readOnly={lockContacts}
                 placeholder="name@company.com"
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:ring-2 focus:ring-[#2D5A5D]/20 disabled:bg-slate-100 disabled:text-slate-400"
               />
@@ -128,7 +136,7 @@ function SendInviteModal({ employee, onClose, onSend }) {
               <label className="mb-3 flex cursor-pointer items-center justify-between">
                 <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
                   <MessageSquare size={16} className="text-emerald-600" />
-                  SMS
+                  WhatsApp
                 </span>
                 <input
                   type="checkbox"
@@ -138,19 +146,20 @@ function SendInviteModal({ employee, onClose, onSend }) {
                 />
               </label>
               <label className="mb-1 block text-xs font-medium text-slate-500">
-                Mobile / SMS Number
+                Mobile / WhatsApp Number
               </label>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                disabled={!useSms}
+                disabled={!useSms || lockContacts}
+                readOnly={lockContacts}
                 placeholder="+1 (555) 000-0000"
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-100 disabled:text-slate-400"
               />
               <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-emerald-700">
                 <Smartphone size={14} />
-                Instant SMS OTP / Link
+                Instant WhatsApp Link
               </p>
             </div>
           </div>
@@ -197,7 +206,7 @@ function EditEmployeeModal({ employee, chapters, onClose, onSave }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.chapter) {
-      alert("Chapter is required.");
+      toast.error("Chapter is required.");
       return;
     }
     setSubmitting(true);
@@ -368,6 +377,86 @@ function parseApiError(responseData, fallback) {
   return typeof message === "string" ? message : JSON.stringify(message);
 }
 
+const CHANNEL_ERROR_LIMIT = 160;
+
+function shortenChannelError(text) {
+  let plain = text.trim();
+  if (!plain) return "";
+
+  const htmlStart = plain.search(/<!doctype|<html/i);
+  if (htmlStart !== -1) {
+    const html = plain.slice(htmlStart);
+    const preMatch = html.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i);
+    const extracted = (
+      preMatch ? preMatch[1] : html.replace(/<[^>]+>/g, " ")
+    )
+      .replace(/\s+/g, " ")
+      .trim();
+    const prefix = plain.slice(0, htmlStart).replace(/[:\s]+$/, "").trim();
+    plain = [prefix, extracted].filter(Boolean).join(": ");
+  }
+
+  if (plain.length <= CHANNEL_ERROR_LIMIT) return plain;
+  return `${plain.slice(0, CHANNEL_ERROR_LIMIT - 1).trimEnd()}…`;
+}
+
+function channelErrorText(errors, key) {
+  const value = errors?.[key];
+  if (typeof value === "string" && value.trim()) {
+    return shortenChannelError(value);
+  }
+  if (Array.isArray(value) && value.length) {
+    return shortenChannelError(value.map((item) => String(item)).join(" "));
+  }
+  return "";
+}
+
+function deliveryResultMessage(responseData, channels) {
+  const requested = Array.isArray(channels) ? channels : [];
+  const wantEmail = requested.includes("email");
+  const wantWhatsapp = requested.includes("whatsapp");
+  const emailSent = responseData?.email_sent === true;
+  const whatsappSent = responseData?.whatsapp_sent === true;
+  const emailError = channelErrorText(responseData?.errors, "email");
+  const whatsappError = channelErrorText(responseData?.errors, "whatsapp");
+
+  if ((!wantEmail || emailSent) && (!wantWhatsapp || whatsappSent)) {
+    return "Pass sent successfully.";
+  }
+
+  if (wantEmail && wantWhatsapp && emailSent && !whatsappSent) {
+    return whatsappError
+      ? `Email sent. WhatsApp failed. ${whatsappError}`
+      : "Email sent. WhatsApp failed.";
+  }
+
+  if (wantEmail && wantWhatsapp && whatsappSent && !emailSent) {
+    return emailError
+      ? `WhatsApp sent. Email failed. ${emailError}`
+      : "WhatsApp sent. Email failed.";
+  }
+
+  const failures = [];
+  if (wantEmail && !emailSent) {
+    failures.push(emailError ? `Email failed. ${emailError}` : "Email failed.");
+  }
+  if (wantWhatsapp && !whatsappSent) {
+    failures.push(
+      whatsappError ? `WhatsApp failed. ${whatsappError}` : "WhatsApp failed."
+    );
+  }
+  return failures.join(" ") || "Pass could not be sent.";
+}
+
+function showDeliveryResult(responseData, channels) {
+  const message = deliveryResultMessage(responseData, channels);
+  if (message === "Pass sent successfully.") {
+    toast.success(message);
+    return;
+  }
+  toast.error(message);
+}
+
 function ChildCredentialRow({
   child,
   type,
@@ -416,9 +505,6 @@ function ChildCredentialRow({
       <td className="px-3 py-2.5">{child.phone || "N/A"}</td>
       <td className="px-3 py-2.5">{child.email || "N/A"}</td>
       <td className="px-3 py-2.5">{child.primary_credential || "QR"}</td>
-      <td className="px-3 py-2.5">
-        {child.secondary_credential || "Email"}
-      </td>
       <td className="px-3 py-2.5" title={sentAtDisplay}>
         {sentAtDisplay}
       </td>
@@ -470,7 +556,6 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
   const [sessionId, setSessionId] = useState("");
   const [sessions, setSessions] = useState([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
-  const [secondaryCredential, setSecondaryCredential] = useState("Email");
   const [submitting, setSubmitting] = useState(false);
   const [validationError, setValidationError] = useState("");
 
@@ -548,21 +633,13 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
       chapter !== "";
 
   const handleEmailChange = (e) => {
-    const val = e.target.value;
-    setEmail(val);
+    setEmail(e.target.value);
     setValidationError("");
-    if (val.trim() && !phone.trim()) {
-      setSecondaryCredential("Email");
-    }
   };
 
   const handlePhoneChange = (e) => {
-    const val = e.target.value;
-    setPhone(val);
+    setPhone(e.target.value);
     setValidationError("");
-    if (val.trim() && !email.trim()) {
-      setSecondaryCredential("SMS");
-    }
   };
 
   const handleSubmit = async () => {
@@ -622,7 +699,7 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
         email: emailTrimmed,
         phone: phoneTrimmed,
         primaryCredential: "QR",
-        secondaryCredential: isVisitorOrSubstitute ? undefined : secondaryCredential,
+        secondaryCredential: "Email",
         chapter: Number(isVisitorOrSubstitute ? lockedChapterId : chapter),
         chapter_name: isVisitorOrSubstitute
           ? lockedChapterLabel
@@ -837,32 +914,17 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
           </div>
 
           {!isVisitorOrSubstitute && (
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Pass Type
-                </label>
-                <select
-                  disabled
-                  value="QR"
-                  className="w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-500 outline-none"
-                >
-                  <option value="QR">QR</option>
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  MFA
-                </label>
-                <select
-                  value={secondaryCredential}
-                  onChange={(e) => setSecondaryCredential(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
-                >
-                  <option value="Email">Email</option>
-                  <option value="SMS">SMS</option>
-                </select>
-              </div>
+            <div className="mt-4">
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                Pass Type
+              </label>
+              <select
+                disabled
+                value="QR"
+                className="w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-500 outline-none"
+              >
+                <option value="QR">QR</option>
+              </select>
             </div>
           )}
         </div>
@@ -894,7 +956,7 @@ export default function EmployeePortal() {
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [passTarget, setPassTarget] = useState(null);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [newModalConfig, setNewModalConfig] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
@@ -989,15 +1051,15 @@ export default function EmployeePortal() {
     });
   }, [employees, search]);
 
-  const handleSendVisitorSubstitute = async (parentId, child, type) => {
+  const handleSendVisitorSubstitute = async (parentId, child, type, details) => {
     const sessionId = childSessionId(child);
     if (!sessionId) {
-      alert("Session is missing for this record. Cannot send Pass.");
-      return;
+      toast.error("Session is missing for this record. Cannot send Pass.");
+      return false;
     }
     if (!child.id) {
-      alert("Record id is missing. Cannot send Pass.");
-      return;
+      toast.error("Record id is missing. Cannot send Pass.");
+      return false;
     }
 
     const sendKey = `${parentId}-${type}-${child.id}`;
@@ -1009,20 +1071,23 @@ export default function EmployeePortal() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type }),
+          body: JSON.stringify({
+            type,
+            channels: details.channels,
+          }),
         }
       );
 
       const responseData = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        alert(
+        toast.error(
           parseApiError(
             responseData,
             `Failed to send ${type} credential (${response.status}).`
           )
         );
-        return;
+        return false;
       }
 
       setEmployees((prev) =>
@@ -1048,14 +1113,13 @@ export default function EmployeePortal() {
         })
       );
 
-      alert(
-        responseData.email_sent === false
-          ? "Credential generated, but delivery may have failed."
-          : "Credential sent successfully!"
-      );
+      setPassTarget(null);
+      showDeliveryResult(responseData, details.channels);
+      return true;
     } catch (error) {
       console.error("Error sending visitor/substitute credential:", error);
-      alert("Failed to send Pass. Please check your connection.");
+      toast.error("Failed to send Pass. Please check your connection.");
+      return false;
     } finally {
       setSendingChildKey(null);
     }
@@ -1064,11 +1128,11 @@ export default function EmployeePortal() {
   const handleDeleteVisitorSubstitute = async (parentId, child, type) => {
     const sessionId = childSessionId(child);
     if (!sessionId) {
-      alert("Session is missing for this record. Cannot delete.");
+      toast.error("Session is missing for this record. Cannot delete.");
       return;
     }
     if (!child.id) {
-      alert("Record id is missing. Cannot delete.");
+      toast.error("Record id is missing. Cannot delete.");
       return;
     }
 
@@ -1091,7 +1155,7 @@ export default function EmployeePortal() {
       const responseData = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        alert(
+        toast.error(
           parseApiError(
             responseData,
             `Failed to delete ${label} (${response.status}).`
@@ -1114,7 +1178,7 @@ export default function EmployeePortal() {
       );
     } catch (error) {
       console.error("Error deleting visitor/substitute:", error);
-      alert("Failed to delete. Please check your connection.");
+      toast.error("Failed to delete. Please check your connection.");
     } finally {
       setDeletingChildKey(null);
     }
@@ -1123,7 +1187,7 @@ export default function EmployeePortal() {
   const handleSendInvite = async (id, updatedDetails) => {
     const employee = employees.find((e) => e.id === id);
     if (!employee) {
-      alert("Employee record not found.");
+      toast.error("Employee record not found.");
       return false;
     }
 
@@ -1150,7 +1214,7 @@ export default function EmployeePortal() {
           } catch {
             sendError = `Failed to update contact details (${sendResponse.status}).`;
           }
-          alert(sendError);
+          toast.error(sendError);
           return false;
         }
       }
@@ -1160,7 +1224,9 @@ export default function EmployeePortal() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
+          body: JSON.stringify({
+            channels: updatedDetails.channels,
+          }),
         }
       );
 
@@ -1179,12 +1245,8 @@ export default function EmployeePortal() {
               : e
           )
         );
-        setSelectedEmployee(null);
-        alert(
-          responseData.email_sent
-            ? "Wallet links sent successfully!"
-            : "Wallet links generated, but the email could not be sent."
-        );
+        setPassTarget(null);
+        showDeliveryResult(responseData, updatedDetails.channels);
         return true;
       }
 
@@ -1193,11 +1255,11 @@ export default function EmployeePortal() {
         responseData.message ||
         responseData.error ||
         `Failed to send Pass (${response.status}).`;
-      alert(errorMessage);
+      toast.error(errorMessage);
       return false;
     } catch (error) {
       console.error("Error triggering invite:", error);
-      alert("Failed to send Pass. Please check your connection.");
+      toast.error("Failed to send Pass. Please check your connection.");
       return false;
     }
   };
@@ -1215,6 +1277,7 @@ export default function EmployeePortal() {
         member_id: formData.parentUserId,
         email: formData.email || null,
         phone: formData.phone || null,
+        secondary_credential: "Email",
       };
 
       const response = await fetch(
@@ -1339,10 +1402,11 @@ export default function EmployeePortal() {
         );
         setEditingEmployee(null);
       } else {
-        alert("Failed to update record.");
+        toast.error("Failed to update record.");
       }
     } catch (error) {
       console.error("Update error:", error);
+      toast.error("Failed to update record. Please check your connection.");
     }
   };
 
@@ -1356,10 +1420,11 @@ export default function EmployeePortal() {
       if (response.ok || response.status === 204) {
         setEmployees((prev) => prev.filter((emp) => emp.id !== id));
       } else {
-        alert("Failed to delete record.");
+        toast.error("Failed to delete record.");
       }
     } catch (error) {
       console.error("Delete error:", error);
+      toast.error("Failed to delete record. Please check your connection.");
     }
   };
 
@@ -1440,7 +1505,6 @@ export default function EmployeePortal() {
                   <th className="px-3 py-3.5 font-semibold">Phone</th>
                   <th className="px-3 py-3.5 font-semibold">Email</th>
                   <th className="px-3 py-3.5 font-semibold">Type</th>
-                  <th className="px-3 py-3.5 font-semibold">Secondary</th>
                   <th className="px-3 py-3.5 font-semibold">Sent At</th>
                   <th className="px-3 py-3.5 font-semibold text-right">Actions</th>
                 </tr>
@@ -1524,11 +1588,6 @@ export default function EmployeePortal() {
                             employee.primaryCredential ||
                             "QR"}
                         </td>
-                        <td className="px-3 py-3.5 truncate">
-                          {employee.secondary_credential ||
-                            employee.secondaryCredential ||
-                            "Email"}
-                        </td>
                         <td
                           className="px-3 py-3.5 text-slate-500 truncate"
                           title={sentAtDisplay}
@@ -1539,7 +1598,9 @@ export default function EmployeePortal() {
                         <td className="px-3 py-3.5 text-right relative">
                           <div className="flex items-center justify-end gap-1.5">
                             <button
-                              onClick={() => setSelectedEmployee(employee)}
+                              onClick={() =>
+                                setPassTarget({ kind: "member", record: employee })
+                              }
                               className="flex items-center gap-1 rounded-lg bg-[#2D5A5D] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-[#234749] whitespace-nowrap"
                             >
                               <Send size={12} />
@@ -1633,7 +1694,14 @@ export default function EmployeePortal() {
                               parentId={employee.id}
                               sendingKey={sendingChildKey}
                               deletingKey={deletingChildKey}
-                              onSend={handleSendVisitorSubstitute}
+                              onSend={(parentId, child, type) =>
+                                setPassTarget({
+                                  kind: "child",
+                                  parentId,
+                                  child,
+                                  type,
+                                })
+                              }
                               onDelete={handleDeleteVisitorSubstitute}
                             />
                           ))}
@@ -1648,7 +1716,14 @@ export default function EmployeePortal() {
                               parentId={employee.id}
                               sendingKey={sendingChildKey}
                               deletingKey={deletingChildKey}
-                              onSend={handleSendVisitorSubstitute}
+                              onSend={(parentId, child, type) =>
+                                setPassTarget({
+                                  kind: "child",
+                                  parentId,
+                                  child,
+                                  type,
+                                })
+                              }
                               onDelete={handleDeleteVisitorSubstitute}
                             />
                           ))}
@@ -1664,11 +1739,23 @@ export default function EmployeePortal() {
       </main>
 
       {/* Modals */}
-      {selectedEmployee && (
+      {passTarget && (
         <SendInviteModal
-          employee={selectedEmployee}
-          onClose={() => setSelectedEmployee(null)}
-          onSend={handleSendInvite}
+          employee={
+            passTarget.kind === "member" ? passTarget.record : passTarget.child
+          }
+          lockContacts={passTarget.kind === "child"}
+          onClose={() => setPassTarget(null)}
+          onSend={(id, details) =>
+            passTarget.kind === "member"
+              ? handleSendInvite(id, details)
+              : handleSendVisitorSubstitute(
+                  passTarget.parentId,
+                  passTarget.child,
+                  passTarget.type,
+                  details
+                )
+          }
         />
       )}
 
