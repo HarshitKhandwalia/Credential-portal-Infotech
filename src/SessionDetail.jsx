@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Trash2, RefreshCw } from "lucide-react";
+import { ArrowLeft, Trash2, RefreshCw, Download } from "lucide-react";
 import logo from "./assets/logoEI.jpeg";
 import { API_ROOT } from "./config";
 import PortalNav from "./PortalNav";
@@ -52,6 +52,59 @@ function personTypeBadgeClass(type) {
   if (type === "visitor") return "bg-blue-100 text-blue-700";
   if (type === "substitute") return "bg-purple-100 text-purple-700";
   return "bg-slate-100 text-slate-600";
+}
+
+function csvCell(value) {
+  return `"${String(value ?? "").replace(/"/g, '""')}"`;
+}
+
+function downloadCSV(report, sessionTitle) {
+  if (!report) return;
+
+  const headers = [
+    "Status",
+    "Type",
+    "Name",
+    "For Member",
+    "Membership ID",
+    "Email",
+    "Phone",
+    "Scanned At",
+  ];
+  const groups = [
+    ["Attended", report.attended],
+    ["Pending", report.pending],
+    ["Absent", report.absent],
+  ];
+  const rows = [];
+
+  for (const [status, people] of groups) {
+    for (const person of people || []) {
+      const type = person.type || "member";
+      rows.push([
+        status,
+        personTypeLabel(type),
+        person.name || "",
+        type === "member" ? "" : person.member_name || "",
+        person.membership_id || "",
+        person.email || "",
+        person.phone || "",
+        person.scanned_at ? new Date(person.scanned_at).toLocaleString() : "",
+      ]);
+    }
+  }
+
+  const csvContent = [headers, ...rows].map((row) => row.map(csvCell).join(",")).join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const safeTitle = String(sessionTitle || "attendance")
+    .replace(/[\\/:*?"<>|]+/g, " ")
+    .trim();
+  link.href = url;
+  link.download = `${safeTitle || "attendance"}-report.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 function collectSessionGuests(credentials, sessionId) {
@@ -310,6 +363,15 @@ export default function SessionDetail() {
             <PortalNav />
           </div>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => downloadCSV(report, session?.title)}
+              disabled={!report}
+              className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Download size={14} />
+              Download CSV
+            </button>
             <button
               onClick={load}
               className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
