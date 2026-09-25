@@ -370,7 +370,7 @@ export default function SessionDetail() {
               className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Download size={14} />
-              Download CSV
+              Download Report
             </button>
             <button
               onClick={load}
@@ -524,11 +524,6 @@ export default function SessionDetail() {
                     </div>
                   </div>
 
-                  <PeopleTable
-                    title="Attended"
-                    people={report.attended}
-                    emptyLabel="No one has scanned in yet."
-                  />
                   {report.session_ended ? (
                     <PeopleTable
                       title="Absent"
@@ -542,6 +537,11 @@ export default function SessionDetail() {
                       emptyLabel="Everyone expected has already scanned in."
                     />
                   )}
+                  <PeopleTable
+                    title="Attended"
+                    people={report.attended}
+                    emptyLabel="No one has scanned in yet."
+                  />
                 </div>
               )}
             </div>
