@@ -722,6 +722,12 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
       setSubmitting(false);
     }
   };
+  // State for mark paid dialog
+  const [markPaidDialog, setMarkPaidDialog] = useState({
+  isOpen: false,
+  employee: null,
+  loading: false,
+});
 
   return (
     <div
@@ -1190,6 +1196,35 @@ export default function EmployeePortal() {
       toast.error("Employee record not found.");
       return false;
     }
+    // Handle mark paid dialog open
+const handleMarkPaid = (employee) => {
+  setMarkPaidDialog({ isOpen: true, employee, loading: false });
+};
+
+// Confirm and submit mark paid
+const confirmMarkPaid = async () => {
+  const { employee } = markPaidDialog;
+  if (!employee) return;
+
+  setMarkPaidDialog((prev) => ({ ...prev, loading: true }));
+
+  try {
+    const res = await fetch(`${API_ROOT}/credentials/${employee.id}/mark-paid/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (!res.ok) throw new Error("Failed to mark as paid");
+
+    // Close dialog and refresh list
+    setMarkPaidDialog({ isOpen: false, employee: null, loading: false });
+    loadCredentials(); // Reload employees
+  } catch (err) {
+    console.error("Error marking paid:", err);
+    alert("Failed to mark as paid");
+    setMarkPaidDialog((prev) => ({ ...prev, loading: false }));
+  }
+};
 
     try {
       if (updatedDetails.email || updatedDetails.phone) {
@@ -1523,6 +1558,7 @@ export default function EmployeePortal() {
                     employee.created_at ||
                     employee.invited_at;
 
+<<<<<<< Updated upstream
                   const sentAtDisplay = rawTimestamp
                     ? new Date(rawTimestamp).toLocaleString([], {
                         dateStyle: "short",
@@ -1533,6 +1569,48 @@ export default function EmployeePortal() {
                   const hasSubordinates =
                     (employee.visitors && employee.visitors.length > 0) ||
                     (employee.substitutes && employee.substitutes.length > 0);
+=======
+                      {/* Action Menu (Edit / Delete) */}
+                      <div className="relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuId(openMenuId === employee.id ? null : employee.id);
+                          }}
+                          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+                          title="More Actions"
+                        >
+                          <MoreVertical size={18} />
+                        </button>
+                        <button
+                         onClick={() => {
+    handleMarkPaid(employee);
+    setActionsOpen(null);
+  }}
+  className="flex w-full items-center gap-2 px-4 py-2 text-sm text-emerald-600 hover:bg-emerald-50"
+>
+  <CheckCircle2 size={14} />
+  Mark Paid
+</button>
+                        {openMenuId === employee.id && (
+                          <>
+                            <div 
+                              className="fixed inset-0 z-10" 
+                              onClick={() => setOpenMenuId(null)} 
+                            />
+                            
+                            <div className="absolute right-0 top-10 z-20 w-40 rounded-xl border border-slate-100 bg-white py-1 shadow-lg text-left">
+                              <button
+                                onClick={() => {
+                                  setEditingEmployee(employee);
+                                  setOpenMenuId(null);
+                                }}
+                                className="flex w-full items-center gap-2 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                              >
+                                <Edit size={14} className="text-slate-500" />
+                                Edit
+                              </button>
+>>>>>>> Stashed changes
 
                   return (
                     <React.Fragment key={employee.id}>
@@ -1607,6 +1685,7 @@ export default function EmployeePortal() {
                               <span>Send Pass</span>
                             </button>
 
+<<<<<<< Updated upstream
                             {/* 3-Dots Action Dropdown */}
                             <div className="relative">
                               <button
@@ -1622,6 +1701,28 @@ export default function EmployeePortal() {
                               >
                                 <MoreVertical size={16} />
                               </button>
+=======
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenMenuId(openMenuId === employee.id ? null : employee.id);
+                              }}
+                              className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition shrink-0"
+                              title="More Actions"
+                            >
+                              <MoreVertical size={16} />
+                            </button>
+                              <button
+  onClick={() => {
+    handleMarkPaid(employee);
+    setActionsOpen(null);
+  }}
+  className="flex w-full items-center gap-2 px-4 py-2 text-sm text-emerald-600 hover:bg-emerald-50"
+>
+  <CheckCircle2 size={14} />
+  Mark Paid
+</button>
+>>>>>>> Stashed changes
 
                               {openMenuId === employee.id && (
                                 <div className="absolute right-0 top-full z-20 mt-1 w-36 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
@@ -1680,6 +1781,7 @@ export default function EmployeePortal() {
                           </div>
                         </td>
                       </tr>
+<<<<<<< Updated upstream
 
                       {/* VISITOR & SUBSTITUTE NESTED SUB-ROWS */}
                       {expandedUserIds.includes(employee.id) && (
@@ -1734,6 +1836,41 @@ export default function EmployeePortal() {
                 })}
               </tbody>
             </table>
+=======
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+             {/* Mark Paid Dialog */}
+            {markPaidDialog.isOpen && markPaidDialog.employee && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-lg max-w-sm">
+                  <h2 className="text-lg font-semibold text-slate-800 mb-4">
+                    Mark as Paid
+                  </h2>
+                  <p className="text-sm text-slate-600 mb-6">
+                    Are you sure <strong>{markPaidDialog.employee.name}</strong> has paid for this cycle?
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setMarkPaidDialog({ isOpen: false, employee: null, loading: false })}
+                      className="flex-1 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={confirmMarkPaid}
+                      disabled={markPaidDialog.loading}
+                      className="flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                      {markPaidDialog.loading ? "Saving..." : "Mark Paid"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+>>>>>>> Stashed changes
           </div>
         )}
       </main>

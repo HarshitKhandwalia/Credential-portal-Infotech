@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useNavigate, Link, useParams } from "react-router-dom";
 import { Plus, ArrowLeft, X, Calendar, Repeat } from "lucide-react";
 import logo from "./assets/logoEI.jpeg";
 import { API_ROOT } from "./config";
@@ -111,7 +111,7 @@ function SessionModal({ mode, onClose, onSave, onSaveRecurring, onDone }) {
       setSubmitting(false);
     }
   };
-
+  const navigate = useNavigate();
   const handleDone = async () => {
     await onDone();
   };
@@ -408,7 +408,13 @@ export default function ChapterDetail() {
             <img src={logo} alt="Enterprise-Infotech Logo" className="h-14 w-auto object-contain" />
             <PortalNav />
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+           <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate(`/chapters/${chapterId}/payment-report`)}
+              className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            >
+              Payment Report
+            </button>
             <button
               onClick={() => setCreateMode("one-off")}
               className="flex items-center gap-2 rounded-lg bg-[#2D5A5D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#234749]"

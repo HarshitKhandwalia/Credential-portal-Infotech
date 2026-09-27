@@ -7,6 +7,7 @@ import Chapters from "./Chapters";
 import ChapterDetail from "./ChapterDetail";
 import SessionDetail from "./SessionDetail";
 import { Toaster } from "./toast";
+import PaymentReport from "./PaymentReport";
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/scanner" element={<Scanner />} />
         <Route path="/wallet/apple/:token" element={<AppleWalletPage />} />
         <Route path="/wallet/google/:token" element={<GoogleWalletPage />} />
+        <Route path="/chapters/:chapterId/payment-report" element={<PaymentReport />} />
       </Routes>
     </BrowserRouter>
   );
