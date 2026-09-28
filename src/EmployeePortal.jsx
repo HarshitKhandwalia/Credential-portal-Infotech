@@ -13,6 +13,7 @@ import {
   Trash2,
   MoreVertical,
   ChevronDown,
+  Eye,
   ChevronUp,
 } from "lucide-react";
 import logo from "./assets/logoEI.jpeg";
@@ -191,6 +192,9 @@ function EditEmployeeModal({ employee, chapters, onClose, onSave }) {
     secondary_credential:
       employee.secondary_credential || employee.secondaryCredential || "SMS",
     chapter: employee.chapter != null ? String(employee.chapter) : "",
+    designation: employee.designation || "",
+  linkedin: employee.linkedin || "",
+  website: employee.website || "",
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -464,6 +468,9 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
   const [membershipId, setMembershipId] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [designation, setDesignation] = useState("");
+  const [linkedin, setLinkedin] = useState("");
+  const [website, setWebsite] = useState("");
   const [chapter, setChapter] = useState(
     isVisitorOrSubstitute && lockedChapterId != null ? String(lockedChapterId) : ""
   );
@@ -621,6 +628,9 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
         membershipId: isVisitorOrSubstitute ? "" : membershipId.trim(),
         email: emailTrimmed,
         phone: phoneTrimmed,
+        designation: designation.trim(),
+        linkedin: linkedin.trim(),
+        website: website.trim(),
         primaryCredential: "QR",
         secondaryCredential: isVisitorOrSubstitute ? undefined : secondaryCredential,
         chapter: Number(isVisitorOrSubstitute ? lockedChapterId : chapter),
@@ -652,7 +662,7 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative bg-[#2D5A5D] px-6 py-5 text-white">
@@ -675,7 +685,7 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
           </div>
         </div>
 
-        <div className="px-6 py-6">
+        <div className="overflow-y-auto px-6 py-6">
           {validationError && (
             <div className="mb-4 rounded-lg bg-red-50 p-3 text-xs font-medium text-red-600 border border-red-200">
               {validationError}
@@ -794,6 +804,57 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
             </div>
           )}
 
+          {/* Designation Input */}
+          <div className="mt-4">
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+              Designation
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. Software Engineer"
+              value={designation}
+              onChange={(e) => {
+                setDesignation(e.target.value);
+                setValidationError("");
+              }}
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 placeholder-slate-400 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+            />
+          </div>
+
+          {/* LinkedIn & Website Inputs */}
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                LinkedIn Profile
+              </label>
+              <input
+                type="url"
+                placeholder="https://linkedin.com/in/..."
+                value={linkedin}
+                onChange={(e) => {
+                  setLinkedin(e.target.value);
+                  setValidationError("");
+                }}
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 placeholder-slate-400 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                Website
+              </label>
+              <input
+                type="url"
+                placeholder="https://example.com"
+                value={website}
+                onChange={(e) => {
+                  setWebsite(e.target.value);
+                  setValidationError("");
+                }}
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 placeholder-slate-400 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+              />
+            </div>
+          </div>
+
           <div className="mt-4">
             <label className="mb-1 block text-sm font-medium text-slate-700">
               Email Address
@@ -894,6 +955,7 @@ export default function EmployeePortal() {
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [inviteEmployee, setInviteEmployee] = useState(null);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [newModalConfig, setNewModalConfig] = useState(null);
@@ -901,6 +963,7 @@ export default function EmployeePortal() {
   const [expandedUserIds, setExpandedUserIds] = useState([]);
   const [sendingChildKey, setSendingChildKey] = useState(null);
   const [deletingChildKey, setDeletingChildKey] = useState(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const toggleExpandUser = (id) => {
     setExpandedUserIds((prev) =>
@@ -1215,6 +1278,9 @@ export default function EmployeePortal() {
         member_id: formData.parentUserId,
         email: formData.email || null,
         phone: formData.phone || null,
+        designation: formData.designation || null, 
+        linkedin: formData.linkedin || null,       
+        website: formData.website || null,
       };
 
       const response = await fetch(
@@ -1246,6 +1312,9 @@ export default function EmployeePortal() {
         last_name: responseData.last_name || formData.lastName,
         email: responseData.email ?? formData.email,
         phone: responseData.phone ?? formData.phone,
+        designation: responseData.designation ?? formData.designation, 
+  linkedin: responseData.linkedin ?? formData.linkedin,      
+  website: responseData.website ?? formData.website,
         chapter: responseData.chapter ?? formData.chapter,
         chapter_name: responseData.chapter_name || formData.chapter_name,
         session_id: responseData.session_id ?? formData.sessionId,
@@ -1288,6 +1357,9 @@ export default function EmployeePortal() {
       membership_id: (formData.membershipId || "").trim(),
       email: formData.email || null,
       phone: formData.phone || null,
+      designation: formData.designation || null, 
+      linkedin: formData.linkedin || null,       
+      website: formData.website || null,         
       primary_credential: formData.primaryCredential || "QR",
       secondary_credential: formData.secondaryCredential || "Email",
       status: "not_invited",
@@ -1539,7 +1611,7 @@ export default function EmployeePortal() {
                         <td className="px-3 py-3.5 text-right relative">
                           <div className="flex items-center justify-end gap-1.5">
                             <button
-                              onClick={() => setSelectedEmployee(employee)}
+                              onClick={() => setInviteEmployee(employee)}
                               className="flex items-center gap-1 rounded-lg bg-[#2D5A5D] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-[#234749] whitespace-nowrap"
                             >
                               <Send size={12} />
@@ -1594,6 +1666,16 @@ export default function EmployeePortal() {
                                   >
                                     <UserPlus size={13} /> Substitute
                                   </button>
+                                  <button
+  onClick={() => {
+    setSelectedEmployee(employee);
+    setIsDetailsModalOpen(true);
+    setOpenMenuId(null);
+  }}
+  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50"
+>
+  <Eye size={13} /> View Details
+</button>
                                   <div className="my-1 border-t border-slate-100" />
                                   <button
                                     onClick={() => {
@@ -1664,13 +1746,20 @@ export default function EmployeePortal() {
       </main>
 
       {/* Modals */}
-      {selectedEmployee && (
+{inviteEmployee && (
+  <SendInviteModal
+    employee={inviteEmployee}
+    onClose={() => setInviteEmployee(null)}
+    onSend={handleSendInvite}
+  />
+)}
+      {/* {selectedEmployee && (
         <SendInviteModal
           employee={selectedEmployee}
           onClose={() => setSelectedEmployee(null)}
           onSend={handleSendInvite}
         />
-      )}
+      )} */}
 
       {editingEmployee && (
         <EditEmployeeModal
@@ -1689,6 +1778,122 @@ export default function EmployeePortal() {
           onAdd={handleAddEmployee}
         />
       )}
+      <EmployeeDetailsModal
+  employee={selectedEmployee}
+  isOpen={isDetailsModalOpen}
+  onClose={() => setIsDetailsModalOpen(false)}
+/>
+    </div>
+  );
+}
+// Employee Details Modal Component
+function EmployeeDetailsModal({ employee, isOpen, onClose }) {
+  if (!isOpen || !employee) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md max-h-[85vh] flex flex-col rounded-2xl bg-white shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between bg-[#2D5A5D] px-6 py-5 text-white">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 font-bold text-white">
+              {employee.name ? employee.name.charAt(0).toUpperCase() : "U"}
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold leading-tight">{employee.name}</h2>
+              <p className="text-xs text-white/80">{employee.designation || "No Designation"}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-full p-1 text-white/80 transition hover:bg-white/20"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="overflow-y-auto p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <span className="block text-xs font-medium text-slate-400">Membership ID</span>
+              <span className="text-sm font-semibold text-slate-800">{employee.membership_id || "N/A"}</span>
+            </div>
+            <div>
+              <span className="block text-xs font-medium text-slate-400">Chapter</span>
+              <span className="text-sm font-semibold text-slate-800">{employee.chapter_name || "N/A"}</span>
+            </div>
+          </div>
+
+          <hr className="border-slate-100" />
+
+          <div>
+            <span className="block text-xs font-medium text-slate-400">Designation</span>
+            <span className="text-sm font-medium text-slate-700">{employee.designation || "Not specified"}</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <span className="block text-xs font-medium text-slate-400">Email Address</span>
+              <span className="text-sm font-medium text-slate-700">{employee.email || "N/A"}</span>
+            </div>
+            <div>
+              <span className="block text-xs font-medium text-slate-400">Mobile Number</span>
+              <span className="text-sm font-medium text-slate-700">{employee.phone || "N/A"}</span>
+            </div>
+          </div>
+
+          <hr className="border-slate-100" />
+
+          <div>
+            <span className="block text-xs font-medium text-slate-400 mb-1">LinkedIn Profile</span>
+            {employee.linkedin ? (
+              <a
+                href={employee.linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-blue-600 hover:underline break-all"
+              >
+                {employee.linkedin}
+              </a>
+            ) : (
+              <span className="text-sm text-slate-400">Not provided</span>
+            )}
+          </div>
+
+          <div>
+            <span className="block text-xs font-medium text-slate-400 mb-1">Website</span>
+            {employee.website ? (
+              <a
+                href={employee.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-blue-600 hover:underline break-all"
+              >
+                {employee.website}
+              </a>
+            ) : (
+              <span className="text-sm text-slate-400">Not provided</span>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end p-4 border-t border-slate-100 bg-slate-50">
+          <button
+            onClick={onClose}
+            className="rounded-lg bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-300"
+          >
+            Close
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

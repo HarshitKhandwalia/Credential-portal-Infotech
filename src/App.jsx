@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import EmployeePortal from "./EmployeePortal";
+import AddContactPage from './addcontact';
 import Scanner from "./Scanner";
 import AppleWalletPage from "./AppleWalletPage";
 import GoogleWalletPage from "./GoogleWalletPage";
@@ -18,6 +19,9 @@ export default function App() {
         <Route path="/scanner" element={<Scanner />} />
         <Route path="/wallet/apple/:token" element={<AppleWalletPage />} />
         <Route path="/wallet/google/:token" element={<GoogleWalletPage />} />
+        
+        {/* ADD THIS ROUTE LINE BELOW */}
+        <Route path="/addcontact" element={<AddContactPage />} />
       </Routes>
     </BrowserRouter>
   );
