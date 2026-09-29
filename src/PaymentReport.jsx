@@ -51,41 +51,62 @@ export default function PaymentReport() {
   const [cycles, setCycles] = useState([]);
   const [selectedCycle, setSelectedCycle] = useState(null);
   const [chapterName, setChapterName] = useState("");
+  const [error, setError] = useState("");
 
   // Fetch available cycles for dropdown
   const loadCycles = async () => {
     try {
+      setError("");
       const res = await fetch(`${API_ROOT}/cycles-dropdown/`);
       if (!res.ok) throw new Error("Failed to load cycles");
       const data = await res.json();
-      setCycles(data.cycles);
-      
-      // Select current cycle by default
-      const currentCycle = data.cycles.find((c) => c.is_current);
+      const cycleList = data.cycles || [];
+      setCycles(cycleList);
+
+      // Select current cycle by default (fall back to first)
+      const currentCycle =
+        cycleList.find((c) => c.is_current) || cycleList[0];
       if (currentCycle) {
         setSelectedCycle(currentCycle.cycle_start);
+      } else {
+        setLoading(false);
+        setError("No payment cycles available.");
       }
     } catch (err) {
       console.error("Error loading cycles:", err);
+      setLoading(false);
+      setError("Failed to load payment cycles.");
     }
   };
 
   // Fetch payment report for selected cycle
   const loadReport = async (cycleStart) => {
-    if (!cycleStart) return;
-    
+    if (!cycleStart || !chapterId) return;
+
     setLoading(true);
+    setError("");
     try {
+      const params = new URLSearchParams({ cycle_start: cycleStart });
       const res = await fetch(
-        `${API_ROOT}/chapters/${chapterId}/payment-report/?cycle_start=${cycleStart}`
+        `${API_ROOT}/chapters/${chapterId}/payment-report/?${params}`
       );
-      if (!res.ok) throw new Error("Failed to load report");
+      if (!res.ok) {
+        let detail = "Failed to load payment report.";
+        try {
+          const body = await res.json();
+          detail = body.detail || body.error || body.message || detail;
+        } catch {
+          /* ignore non-JSON error bodies */
+        }
+        throw new Error(detail);
+      }
       const data = await res.json();
       setReport(data);
-      setChapterName(data.chapter.name);
+      setChapterName(data.chapter?.name || "");
     } catch (err) {
       console.error("Error loading report:", err);
       setReport(null);
+      setError(err.message || "Failed to load payment report.");
     } finally {
       setLoading(false);
     }
@@ -99,7 +120,7 @@ export default function PaymentReport() {
     if (selectedCycle) {
       loadReport(selectedCycle);
     }
-  }, [selectedCycle]);
+  }, [selectedCycle, chapterId]);
 
   return (
     <div className="min-h-screen bg-[#EEF4F4]">
@@ -125,7 +146,7 @@ export default function PaymentReport() {
 
         <div className="space-y-6">
           {/* Title and Cycle Selector */}
-          <div className="flex items-end justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h1 className="text-2xl font-bold text-slate-800">Payment Report</h1>
               <p className="mt-1 text-sm text-slate-500">{chapterName}</p>
@@ -148,10 +169,14 @@ export default function PaymentReport() {
             </div>
           </div>
 
-          {/* Loading State */}
+          {/* Loading / Error / Empty / Report */}
           {loading ? (
             <div className="rounded-xl border border-slate-200 bg-white py-16 text-center text-sm text-slate-500">
               Loading payment report...
+            </div>
+          ) : error ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 py-16 text-center text-sm text-red-600">
+              {error}
             </div>
           ) : !report ? (
             <div className="rounded-xl border border-dashed border-slate-200 bg-white py-16 text-center text-sm text-slate-400">

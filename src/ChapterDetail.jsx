@@ -111,7 +111,6 @@ function SessionModal({ mode, onClose, onSave, onSaveRecurring, onDone }) {
       setSubmitting(false);
     }
   };
-  const navigate = useNavigate();
   const handleDone = async () => {
     await onDone();
   };
@@ -338,6 +337,7 @@ function SessionModal({ mode, onClose, onSave, onSaveRecurring, onDone }) {
 
 export default function ChapterDetail() {
   const { chapterId } = useParams();
+  const navigate = useNavigate();
   const [chapter, setChapter] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -411,7 +411,7 @@ export default function ChapterDetail() {
            <div className="flex items-center gap-2">
             <button
               onClick={() => navigate(`/chapters/${chapterId}/payment-report`)}
-              className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              className="flex items-center gap-2 rounded-lg border border-slate-500 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
             >
               Payment Report
             </button>
