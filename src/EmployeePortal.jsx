@@ -968,6 +968,7 @@ export default function EmployeePortal() {
     employee: null,
     loading: false,
   });
+  const [currentCycle, setCurrentCycle] = useState(null);
 
   const toggleExpandUser = (id) => {
     setExpandedUserIds((prev) =>
@@ -1043,10 +1044,47 @@ export default function EmployeePortal() {
     }
   };
 
+  const fetchCurrentCycle = async () => {
+    try {
+      const res = await fetch(`${API_ROOT}/cycles-dropdown/`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const cycleList = data.cycles || [];
+      const current =
+        cycleList.find((cycle) => cycle.is_current) || cycleList[0] || null;
+      setCurrentCycle(current);
+    } catch (error) {
+      console.error("Error loading current cycle:", error);
+    }
+  };
+
   useEffect(() => {
     fetchEmployees();
     fetchChapters();
+    fetchCurrentCycle();
   }, []);
+
+  const currentCycleLabel = useMemo(() => {
+    if (!currentCycle) return null;
+    if (currentCycle.display) return currentCycle.display;
+
+    const formatCycleDate = (value) => {
+      if (!value) return null;
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
+      return date.toLocaleDateString([], { dateStyle: "medium" });
+    };
+
+    const start = formatCycleDate(
+      currentCycle.cycle_start || currentCycle.start || currentCycle.start_date
+    );
+    const end = formatCycleDate(
+      currentCycle.cycle_end || currentCycle.end || currentCycle.end_date
+    );
+
+    if (start && end) return `${start} – ${end}`;
+    return start || end || null;
+  }, [currentCycle]);
 
   const filteredEmployees = useMemo(() => {
     return employees.filter((e) => {
@@ -1208,14 +1246,28 @@ export default function EmployeePortal() {
         }
       );
 
-      if (!res.ok) throw new Error("Failed to mark as paid");
+      if (!res.ok) {
+        let errorData = null;
+        try {
+          errorData = await res.json();
+        } catch {
+          /* ignore non-JSON error bodies */
+        }
+        throw new Error(
+          parseApiError(errorData, "Failed to mark as paid.")
+        );
+      }
 
       setMarkPaidDialog({ isOpen: false, employee: null, loading: false });
-      toast.success("Marked as paid.");
+      toast.success(
+        currentCycleLabel
+          ? `Marked as paid for ${currentCycleLabel}.`
+          : "Marked as paid."
+      );
       await fetchEmployees();
     } catch (err) {
       console.error("Error marking paid:", err);
-      toast.error("Failed to mark as paid.");
+      toast.error(err.message || "Failed to mark as paid.");
       setMarkPaidDialog((prev) => ({ ...prev, loading: false }));
     }
   };
@@ -1791,14 +1843,23 @@ export default function EmployeePortal() {
             <h2 className="mb-4 text-lg font-semibold text-slate-800">
               Mark as Paid
             </h2>
-            <p className="mb-6 text-sm text-slate-600">
+            <p className="mb-2 text-sm text-slate-600">
               Are you sure{" "}
               <strong>
                 {markPaidDialog.employee.name ||
                   `${markPaidDialog.employee.first_name || ""} ${markPaidDialog.employee.last_name || ""}`.trim()}
               </strong>{" "}
-              has paid for this cycle?
+              has paid for the current cycle?
             </p>
+            {currentCycleLabel ? (
+              <p className="mb-6 rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
+                {currentCycleLabel}
+              </p>
+            ) : (
+              <p className="mb-6 text-xs text-slate-400">
+                Current cycle dates could not be loaded.
+              </p>
+            )}
             <div className="flex gap-3">
               <button
                 onClick={() =>
