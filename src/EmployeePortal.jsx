@@ -976,6 +976,7 @@ export default function EmployeePortal() {
     const response = await fetch(API_BASE_URL);
     if (response.ok) {
       const rawData = await response.json();
+      console.log("DJANGO RETURNED:", rawData);
       const items = Array.isArray(rawData) ? rawData : rawData.results || [];
 
       // 1. Separate parent users from child records (visitors/substitutes)
