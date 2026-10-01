@@ -15,23 +15,72 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import PhoneInput, {
+  isValidPhoneNumber,
+  parsePhoneNumber,
+} from "react-phone-number-input";
+import "react-phone-number-input/style.css";
 import logo from "./assets/logoEI.jpeg";
 import { API_BASE_URL, API_ROOT } from "./config";
 import PortalNav from "./PortalNav";
 import { toast } from "./toast";
+
+const DEFAULT_PHONE_COUNTRY = "IN";
+
+/** Normalize stored phones to E.164 for the input; default country India. */
+function normalizePhoneValue(phone) {
+  if (!phone || !String(phone).trim()) return "";
+  const trimmed = String(phone).trim();
+  try {
+    const parsed = parsePhoneNumber(trimmed, DEFAULT_PHONE_COUNTRY);
+    if (parsed?.number) return parsed.number;
+  } catch {
+    // fall through
+  }
+  return trimmed.startsWith("+") ? trimmed : "";
+}
+
+function PortalPhoneInput({
+  value,
+  onChange,
+  disabled = false,
+  readOnly = false,
+  className = "",
+}) {
+  return (
+    <PhoneInput
+      international
+      defaultCountry={DEFAULT_PHONE_COUNTRY}
+      countryCallingCodeEditable={false}
+      value={value || undefined}
+      onChange={(next) => onChange(next || "")}
+      disabled={disabled}
+      readOnly={readOnly}
+      className={`portal-phone-input ${className}`.trim()}
+      numberInputProps={{
+        readOnly,
+        className: "portal-phone-input__number",
+      }}
+    />
+  );
+}
 
 // Send Invite Modal Component
 function SendInviteModal({ employee, onClose, onSend, lockContacts = false }) {
   const [useEmail, setUseEmail] = useState(!!employee.email);
   const [useSms, setUseSms] = useState(!employee.email);
   const [email, setEmail] = useState(employee.email || "");
-  const [phone, setPhone] = useState(employee.phone || "");
+  const [phone, setPhone] = useState(() => normalizePhoneValue(employee.phone));
   const [sending, setSending] = useState(false);
 
   const canSend = (useEmail && email.trim()) || (useSms && phone.trim());
 
   const handleSend = async () => {
     if (!canSend) return;
+    if (useSms && phone.trim() && !isValidPhoneNumber(phone.trim())) {
+      toast.error("Please enter a valid phone number.");
+      return;
+    }
     const channels = [];
     if (useEmail) channels.push("email");
     if (useSms) channels.push("whatsapp");
@@ -148,14 +197,16 @@ function SendInviteModal({ employee, onClose, onSend, lockContacts = false }) {
               <label className="mb-1 block text-xs font-medium text-slate-500">
                 Mobile / WhatsApp Number
               </label>
-              <input
-                type="tel"
+              <PortalPhoneInput
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={setPhone}
                 disabled={!useSms || lockContacts}
                 readOnly={lockContacts}
-                placeholder="+1 (555) 000-0000"
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-100 disabled:text-slate-400"
+                className={
+                  !useSms || lockContacts
+                    ? "portal-phone-input--muted"
+                    : "portal-phone-input--emerald"
+                }
               />
               <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-emerald-700">
                 <Smartphone size={14} />
@@ -194,7 +245,7 @@ function EditEmployeeModal({ employee, chapters, onClose, onSave }) {
       `${employee.first_name || ""} ${employee.last_name || ""}`.trim(),
     membership_id: employee.membership_id || employee.membershipId || "",
     email: employee.email || "",
-    phone: employee.phone || "",
+    phone: normalizePhoneValue(employee.phone),
     primary_credential:
       employee.primary_credential || employee.primaryCredential || "QR",
     secondary_credential:
@@ -207,6 +258,10 @@ function EditEmployeeModal({ employee, chapters, onClose, onSave }) {
     e.preventDefault();
     if (!formData.chapter) {
       toast.error("Chapter is required.");
+      return;
+    }
+    if (formData.phone && !isValidPhoneNumber(formData.phone)) {
+      toast.error("Please enter a valid phone number.");
       return;
     }
     setSubmitting(true);
@@ -281,13 +336,10 @@ function EditEmployeeModal({ employee, chapters, onClose, onSave }) {
             <label className="block text-xs font-medium text-slate-500 mb-1">
               Phone Number
             </label>
-            <input
-              type="text"
+            <PortalPhoneInput
               value={formData.phone}
-              onChange={(e) =>
-                setFormData({ ...formData, phone: e.target.value })
-              }
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#2D5A5D]"
+              onChange={(phone) => setFormData({ ...formData, phone })}
+              className="portal-phone-input--teal"
             />
           </div>
           <div>
@@ -637,8 +689,8 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
     setValidationError("");
   };
 
-  const handlePhoneChange = (e) => {
-    setPhone(e.target.value);
+  const handlePhoneChange = (next) => {
+    setPhone(next);
     setValidationError("");
   };
 
@@ -653,7 +705,7 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
       return;
     }
 
-    if (phoneTrimmed && !/^\+?[0-9\s\-()]{7,15}$/.test(phoneTrimmed)) {
+    if (phoneTrimmed && !isValidPhoneNumber(phoneTrimmed)) {
       setValidationError("Please enter a valid phone number.");
       return;
     }
@@ -894,19 +946,11 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
             <label className="mb-1 block text-sm font-medium text-slate-700">
               Mobile Number
             </label>
-            <div className="relative">
-              <Smartphone
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-              <input
-                type="tel"
-                value={phone}
-                onChange={handlePhoneChange}
-                placeholder="+1 (555) 000-0000"
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
-              />
-            </div>
+            <PortalPhoneInput
+              value={phone}
+              onChange={handlePhoneChange}
+              className="portal-phone-input--teal portal-phone-input--slate-bg"
+            />
             <span className="text-xs font-normal text-slate-400">
               <span className="text-red-500">*</span>At least one is required,
               Email or Phone
