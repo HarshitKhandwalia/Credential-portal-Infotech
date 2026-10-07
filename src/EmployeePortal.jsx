@@ -15,6 +15,8 @@ import {
   ChevronDown,
   Eye,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import logo from "./assets/logoEI.jpeg";
 import { API_BASE_URL, API_ROOT } from "./config";
@@ -403,31 +405,47 @@ function ChildCredentialRow({
       })
     : "N/A";
 
+  const childPhone = child.phone || "N/A";
+  const childEmail = child.email || "N/A";
+  const childPrimary = child.primary_credential || "QR";
+  const childSecondary = child.secondary_credential || "Email";
+
   return (
     <tr className="bg-slate-50/70 text-xs text-slate-600 border-t border-slate-100">
-      <td className="py-2.5 pl-10 pr-3 font-medium text-slate-700">
-        ↳{" "}
-        <span
-          className={`rounded px-1.5 py-0.5 text-[10px] font-semibold mr-1 ${badgeClass}`}
-        >
-          {badgeLabel}
-        </span>
-        {displayName}
+      <td className="py-2.5 pl-6 sm:pl-10 pr-3 md:pl-6 md:pr-2 lg:pl-10 lg:pr-3 font-medium text-slate-700">
+        <div className="[overflow-wrap:anywhere]">
+          ↳{" "}
+          <span
+            className={`rounded px-1.5 py-0.5 text-[10px] font-semibold mr-1 ${badgeClass}`}
+          >
+            {badgeLabel}
+          </span>
+          {displayName}
+        </div>
+
+        {/* Compact details for smaller screens (hidden columns) */}
+        <div className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] font-normal text-slate-500 md:hidden">
+          <span>{sessionLabel}</span>
+          {child.phone && <span>{child.phone}</span>}
+          {child.email && (
+            <span className="[overflow-wrap:anywhere]">{child.email}</span>
+          )}
+          <span>{childPrimary} · {childSecondary}</span>
+          <span>{sentAtDisplay}</span>
+        </div>
       </td>
-      <td className="px-3 py-2.5" title={sessionLabel}>
+      <td className="hidden md:table-cell px-2 lg:px-3 py-2.5 [overflow-wrap:anywhere]" title={sessionLabel}>
         {sessionLabel}
       </td>
-      <td className="px-3 py-2.5">{child.phone || "N/A"}</td>
-      <td className="px-3 py-2.5">{child.email || "N/A"}</td>
-      <td className="px-3 py-2.5">{child.primary_credential || "QR"}</td>
-      <td className="px-3 py-2.5">
-        {child.secondary_credential || "Email"}
-      </td>
-      <td className="px-3 py-2.5" title={sentAtDisplay}>
+      <td className="hidden md:table-cell px-2 lg:px-3 py-2.5 [overflow-wrap:anywhere]">{childPhone}</td>
+      <td className="hidden md:table-cell px-2 lg:px-3 py-2.5 [overflow-wrap:anywhere]">{childEmail}</td>
+      <td className="hidden md:table-cell px-2 lg:px-3 py-2.5">{childPrimary}</td>
+      <td className="hidden md:table-cell px-2 lg:px-3 py-2.5">{childSecondary}</td>
+      <td className="hidden md:table-cell px-2 lg:px-3 py-2.5" title={sentAtDisplay}>
         {sentAtDisplay}
       </td>
-      <td className="px-3 py-2.5 text-right">
-        <div className="inline-flex items-center justify-end gap-1.5">
+      <td className="px-3 md:px-2 lg:px-3 py-2.5 text-right">
+        <div className="flex flex-wrap items-center justify-end gap-1.5">
           <button
             type="button"
             onClick={() => onSend(parentId, child, type)}
@@ -949,6 +967,386 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
   );
 }
 
+// ---------- Mobile card components (screens below 768px) ----------
+function formatSentAt(item, includeExtra = false) {
+  const raw =
+    item.sent_at ||
+    item.sentAt ||
+    item.date_sent ||
+    item.dateSent ||
+    (includeExtra ? item.created_at || item.invited_at : null);
+  return raw
+    ? new Date(raw).toLocaleString([], { dateStyle: "short", timeStyle: "short" })
+    : "N/A";
+}
+
+function MobileDetailRow({ label, value }) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-slate-100 py-2.5 text-sm last:border-b-0">
+      <span className="shrink-0 text-slate-400">{label}:</span>
+      <span className="min-w-0 text-right font-medium text-slate-700 [overflow-wrap:anywhere]">
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function MobileChildCard({
+  child,
+  type,
+  badgeClass,
+  badgeLabel,
+  parentId,
+  sendingKey,
+  deletingKey,
+  onSend,
+  onDelete,
+}) {
+  const displayName =
+    child.name || `${child.first_name || ""} ${child.last_name || ""}`.trim();
+  const actionKey = `${parentId}-${type}-${child.id}`;
+  const isSending = sendingKey === actionKey;
+  const isDeleting = deletingKey === actionKey;
+  const isBusy = isSending || isDeleting;
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+      <div className="mb-1 flex items-center gap-2">
+        <span
+          className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold ${badgeClass}`}
+        >
+          {badgeLabel}
+        </span>
+        <span className="min-w-0 text-sm font-bold text-slate-800 [overflow-wrap:anywhere]">
+          {displayName}
+        </span>
+      </div>
+      <MobileDetailRow label="Session" value={childSessionTitle(child)} />
+      <MobileDetailRow label="Phone" value={child.phone || "N/A"} />
+      <MobileDetailRow label="Email" value={child.email || "N/A"} />
+      <MobileDetailRow
+        label="Type"
+        value={child.primary_credential || "QR"}
+      />
+      <MobileDetailRow
+        label="Secondary"
+        value={child.secondary_credential || "Email"}
+      />
+      <MobileDetailRow label="Sent at" value={formatSentAt(child)} />
+      <div className="mt-3 flex gap-2">
+        <button
+          type="button"
+          onClick={() => onSend(parentId, child, type)}
+          disabled={isBusy}
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#2D5A5D] py-2 text-xs font-semibold text-white transition hover:bg-[#234749] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Send size={13} />
+          {isSending ? "Sending..." : "Send Pass"}
+        </button>
+        <button
+          type="button"
+          onClick={() => onDelete(parentId, child, type)}
+          disabled={isBusy}
+          title={`Delete ${badgeLabel}`}
+          className="flex items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Trash2 size={13} />
+          {isDeleting ? "Deleting..." : "Delete"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MobileUserCard({
+  employee,
+  expanded,
+  onToggle,
+  menuOpen,
+  onToggleMenu,
+  onCloseMenu,
+  onSendPass,
+  onAddChild,
+  onViewDetails,
+  onEdit,
+  onDelete,
+  sendingChildKey,
+  deletingChildKey,
+  onSendChild,
+  onDeleteChild,
+}) {
+  const displayName =
+    employee.name ||
+    `${employee.first_name || ""} ${employee.last_name || ""}`.trim();
+  const hasSubordinates =
+    (employee.visitors && employee.visitors.length > 0) ||
+    (employee.substitutes && employee.substitutes.length > 0);
+
+  const menuItemClass =
+    "flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50";
+
+  return (
+    <div
+      className={`relative rounded-2xl border border-slate-100 bg-white p-4 shadow-sm ${
+        menuOpen ? "z-20" : ""
+      }`}
+    >
+      {/* Tap outside to close the menu */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-10" onClick={onCloseMenu} />
+      )}
+
+      {/* Top row: name dropdown (left) + 3 dots (right) */}
+      <div className="flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={expanded}
+          className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
+        >
+          <span className="text-lg font-bold text-slate-800 [overflow-wrap:anywhere]">
+            {displayName}
+          </span>
+          {expanded ? (
+            <ChevronUp size={20} className="shrink-0 text-slate-500" />
+          ) : (
+            <ChevronDown size={20} className="shrink-0 text-slate-500" />
+          )}
+        </button>
+
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleMenu();
+            }}
+            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+            aria-label="More actions"
+          >
+            <MoreVertical size={20} />
+          </button>
+
+          {menuOpen && (
+            <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+              <button
+                type="button"
+                onClick={() => {
+                  onAddChild("visitor");
+                  onCloseMenu();
+                }}
+                className={menuItemClass}
+              >
+                <UserPlus size={15} /> Visitor
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onAddChild("substitute");
+                  onCloseMenu();
+                }}
+                className={menuItemClass}
+              >
+                <UserPlus size={15} /> Substitute
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onViewDetails();
+                  onCloseMenu();
+                }}
+                className={menuItemClass}
+              >
+                <Eye size={15} /> View Details
+              </button>
+              <div className="my-1 border-t border-slate-100" />
+              <button
+                type="button"
+                onClick={() => {
+                  onEdit();
+                  onCloseMenu();
+                }}
+                className={menuItemClass}
+              >
+                <Edit size={15} /> Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onDelete();
+                  onCloseMenu();
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+              >
+                <Trash2 size={15} /> Delete
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Expandable details */}
+      {expanded && (
+        <div className="mt-2">
+          <MobileDetailRow
+            label="Chapter"
+            value={employee.chapter_name || employee.chapter || "N/A"}
+          />
+          <MobileDetailRow label="Phone" value={employee.phone || "N/A"} />
+          <MobileDetailRow label="Email" value={employee.email || "N/A"} />
+          <MobileDetailRow
+            label="Type"
+            value={
+              employee.primary_credential || employee.primaryCredential || "QR"
+            }
+          />
+          <MobileDetailRow
+            label="Secondary"
+            value={
+              employee.secondary_credential ||
+              employee.secondaryCredential ||
+              "Email"
+            }
+          />
+          <MobileDetailRow label="Sent at" value={formatSentAt(employee, true)} />
+
+          {hasSubordinates && (
+            <div className="mt-3 space-y-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                Visitors &amp; Substitutes
+              </p>
+              {employee.visitors?.map((visitor) => (
+                <MobileChildCard
+                  key={`v-${visitor.id}`}
+                  child={visitor}
+                  type="visitor"
+                  badgeClass="bg-blue-100 text-blue-700"
+                  badgeLabel="Visitor"
+                  parentId={employee.id}
+                  sendingKey={sendingChildKey}
+                  deletingKey={deletingChildKey}
+                  onSend={onSendChild}
+                  onDelete={onDeleteChild}
+                />
+              ))}
+              {employee.substitutes?.map((sub) => (
+                <MobileChildCard
+                  key={`s-${sub.id}`}
+                  child={sub}
+                  type="substitute"
+                  badgeClass="bg-purple-100 text-purple-700"
+                  badgeLabel="Substitute"
+                  parentId={employee.id}
+                  sendingKey={sendingChildKey}
+                  deletingKey={deletingChildKey}
+                  onSend={onSendChild}
+                  onDelete={onDeleteChild}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Send Pass */}
+      <button
+        type="button"
+        onClick={onSendPass}
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#2D5A5D] py-3 text-sm font-semibold text-white transition hover:bg-[#234749]"
+      >
+        <Send size={16} />
+        <span>Send Pass</span>
+      </button>
+    </div>
+  );
+}
+
+// ---------- Pagination ----------
+const PAGE_SIZE = 10;
+
+function getPageNumbers(current, total) {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages = [1];
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  if (start > 2) pages.push("...");
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (end < total - 1) pages.push("...");
+  pages.push(total);
+  return pages;
+}
+
+function Pagination({ currentPage, totalPages, totalItems, pageSize, onPageChange }) {
+  if (totalItems <= pageSize) return null;
+
+  const from = (currentPage - 1) * pageSize + 1;
+  const to = Math.min(currentPage * pageSize, totalItems);
+
+  const navBtn =
+    "flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40";
+
+  return (
+    <div className="mt-4 flex flex-col items-center justify-between gap-3 sm:flex-row">
+      <p className="text-xs sm:text-sm text-slate-500">
+      {/* Showing <span className="font-semibold text-slate-700">{from}</span> */}
+        <span className="font-semibold text-slate-700">{to}</span> of{" "}
+        <span className="font-semibold text-slate-700">{totalItems}</span>
+      </p>
+
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className={navBtn}
+        >
+          <ChevronLeft size={16} />
+          <span>Previous</span>
+        </button>
+
+        {/* Page numbers */}
+        <div className="hidden items-center gap-1 sm:flex">
+          {getPageNumbers(currentPage, totalPages).map((page, idx) =>
+            page === "..." ? (
+              <span key={`dots-${idx}`} className="px-1.5 text-slate-400">
+                …
+              </span>
+            ) : (
+              <button
+                key={page}
+                type="button"
+                onClick={() => onPageChange(page)}
+                className={`h-8 min-w-[2rem] rounded-lg px-2 text-sm font-medium transition ${
+                  page === currentPage
+                    ? "bg-[#2D5A5D] text-white"
+                    : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                {page}
+              </button>
+            )
+          )}
+        </div>
+
+        {/* Compact indicator (phones) */}
+        <span className="px-2 text-xs font-medium text-slate-600 sm:hidden">
+          {currentPage} / {totalPages}
+        </span>
+
+        <button
+          type="button"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className={navBtn}
+        >
+          <span>Next</span>
+          <ChevronRight size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // Main Employee Portal Component
 export default function EmployeePortal() {
   const [employees, setEmployees] = useState([]);
@@ -964,6 +1362,7 @@ export default function EmployeePortal() {
   const [sendingChildKey, setSendingChildKey] = useState(null);
   const [deletingChildKey, setDeletingChildKey] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const toggleExpandUser = (id) => {
     setExpandedUserIds((prev) =>
@@ -1052,6 +1451,25 @@ export default function EmployeePortal() {
       return fullName.toLowerCase().includes(search.toLowerCase());
     });
   }, [employees, search]);
+
+  // 10 members per page
+  const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedEmployees = useMemo(
+    () => filteredEmployees.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE),
+    [filteredEmployees, safePage]
+  );
+
+  
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(Math.min(Math.max(1, page), totalPages));
+    setOpenMenuId(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const handleSendVisitorSubstitute = async (parentId, child, type) => {
     const sessionId = childSessionId(child);
@@ -1440,7 +1858,7 @@ export default function EmployeePortal() {
     <div className="min-h-screen bg-[#EEF4F4]">
       {/* Header */}
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-4">
+        <div className="flex w-full flex-wrap items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
             <img
               src={logo}
@@ -1488,7 +1906,7 @@ export default function EmployeePortal() {
       </header>
 
       {/* Main Content Area */}
-      <main className="mx-auto max-w-[98%] px-2 sm:px-4 py-6 sm:py-8">
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="mb-6">
           <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
             User Details
@@ -1504,22 +1922,24 @@ export default function EmployeePortal() {
             No Users match this search.
           </div>
         ) : (
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-visible">
-            <table className="w-full text-left text-sm text-slate-600">
-              <thead className="bg-slate-50 text-xs uppercase text-slate-500 border-b border-slate-200">
+          <>
+          {/* Tablet / laptop / desktop: table */}
+          <div className="hidden md:block rounded-xl border border-slate-200 bg-white shadow-sm overflow-visible">
+            <table className="w-full table-fixed text-left text-xs lg:text-sm text-slate-600">
+              <thead className="bg-slate-50 text-[10px] lg:text-xs uppercase text-slate-500 border-b border-slate-200">
                 <tr>
-                  <th className="px-3 py-3.5 font-semibold">User</th>
-                  <th className="px-3 py-3.5 font-semibold">Chapter</th>
-                  <th className="px-3 py-3.5 font-semibold">Phone</th>
-                  <th className="px-3 py-3.5 font-semibold">Email</th>
-                  <th className="px-3 py-3.5 font-semibold">Type</th>
-                  <th className="px-3 py-3.5 font-semibold">Secondary</th>
-                  <th className="px-3 py-3.5 font-semibold">Sent At</th>
-                  <th className="px-3 py-3.5 font-semibold text-right">Actions</th>
+                  <th className="w-[65%] md:w-[13%] lg:w-[15%] rounded-tl-xl px-3 md:px-2 lg:px-3 py-3.5 font-semibold">User</th>
+                  <th className="hidden md:table-cell md:w-[9%] lg:w-[10%] px-2 lg:px-3 py-3.5 font-semibold">Chapter</th>
+                  <th className="hidden md:table-cell md:w-[12%] lg:w-[11%] px-2 lg:px-3 py-3.5 font-semibold">Phone</th>
+                  <th className="hidden md:table-cell md:w-[18%] lg:w-[20%] px-2 lg:px-3 py-3.5 font-semibold">Email</th>
+                  <th className="hidden md:table-cell md:w-[7%] lg:w-[6%] px-2 lg:px-3 py-3.5 font-semibold">Type</th>
+                  <th className="hidden md:table-cell md:w-[11%] lg:w-[9%] px-2 lg:px-3 py-3.5 font-semibold">Secondary</th>
+                  <th className="hidden md:table-cell md:w-[12%] lg:w-[13%] px-2 lg:px-3 py-3.5 font-semibold">Sent At</th>
+                  <th className="w-[35%] md:w-[18%] lg:w-[16%] rounded-tr-xl px-3 md:px-2 lg:px-3 py-3.5 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredEmployees.map((employee) => {
+                {paginatedEmployees.map((employee) => {
                   const displayName =
                     employee.name ||
                     `${employee.first_name || ""} ${employee.last_name || ""}`.trim();
@@ -1547,70 +1967,82 @@ export default function EmployeePortal() {
                     <React.Fragment key={employee.id}>
                       {/* MAIN USER ROW */}
                       <tr className="hover:bg-slate-50/80 transition">
-                        <td className="px-3 py-3.5 font-medium text-slate-900">
+                        <td className="px-3 md:px-2 lg:px-3 py-3.5 font-medium text-slate-900">
                           <div className="flex items-center gap-2">
                             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700">
                               {displayName.charAt(0).toUpperCase()}
                             </span>
-                            <span className="truncate" title={displayName}>
-                              {displayName}
-                            </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1">
+                                <span className="[overflow-wrap:anywhere]" title={displayName}>
+                                  {displayName}
+                                </span>
 
-                            {/* Dropdown Toggle Arrow renders ONLY when visitors/substitutes exist */}
-                            {hasSubordinates && (
-                              <button
-                                onClick={() => toggleExpandUser(employee.id)}
-                                className="rounded p-1 text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition ml-1"
-                                title="Toggle Visitor/Substitute details"
-                              >
-                                {expandedUserIds.includes(employee.id) ? (
-                                  <ChevronUp size={16} />
-                                ) : (
-                                  <ChevronDown size={16} />
+                                {/* Dropdown Toggle Arrow renders ONLY when visitors/substitutes exist */}
+                                {hasSubordinates && (
+                                  <button
+                                    onClick={() => toggleExpandUser(employee.id)}
+                                    className="shrink-0 rounded p-1 text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition"
+                                    title="Toggle Visitor/Substitute details"
+                                  >
+                                    {expandedUserIds.includes(employee.id) ? (
+                                      <ChevronUp size={16} />
+                                    ) : (
+                                      <ChevronDown size={16} />
+                                    )}
+                                  </button>
                                 )}
-                              </button>
-                            )}
+                              </div>
+
+                              {/* Compact details for smaller screens (hidden columns) */}
+                              <div className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] font-normal text-slate-500 md:hidden">
+                                <span>
+                                  {employee.chapter_name || employee.chapter || "N/A"}
+                                </span>
+                                {employee.phone && (
+                                  <span>{employee.phone}</span>
+                                )}
+                                {employee.email && (
+                                  <span className="[overflow-wrap:anywhere]">{employee.email}</span>
+                                )}
+                                <span>
+                                  {employee.primary_credential ||
+                                    employee.primaryCredential ||
+                                    "QR"}{" · "}
+                                  {employee.secondary_credential ||
+                                    employee.secondaryCredential ||
+                                    "Email"}
+                                </span>
+                                <span>{sentAtDisplay}</span>
+                              </div>
+                            </div>
                           </div>
                         </td>
-                        <td
-                          className="px-3 py-3.5 text-slate-600 truncate"
-                          title={
-                            employee.chapter_name || employee.chapter || "N/A"
-                          }
-                        >
+                        <td className="hidden md:table-cell px-2 lg:px-3 py-3.5 text-slate-600 [overflow-wrap:anywhere]">
                           {employee.chapter_name || employee.chapter || "N/A"}
                         </td>
-                        <td
-                          className="px-3 py-3.5 text-slate-500 truncate"
-                          title={employee.phone || "N/A"}
-                        >
+                        <td className="hidden md:table-cell px-2 lg:px-3 py-3.5 text-slate-500 [overflow-wrap:anywhere]">
                           {employee.phone || "N/A"}
                         </td>
-                        <td
-                          className="px-3 py-3.5 text-slate-500 truncate"
-                          title={employee.email || "N/A"}
-                        >
+                        <td className="hidden md:table-cell px-2 lg:px-3 py-3.5 text-slate-500 [overflow-wrap:anywhere]">
                           {employee.email || "N/A"}
                         </td>
-                        <td className="px-3 py-3.5 truncate">
+                        <td className="hidden md:table-cell px-2 lg:px-3 py-3.5">
                           {employee.primary_credential ||
                             employee.primaryCredential ||
                             "QR"}
                         </td>
-                        <td className="px-3 py-3.5 truncate">
+                        <td className="hidden md:table-cell px-2 lg:px-3 py-3.5">
                           {employee.secondary_credential ||
                             employee.secondaryCredential ||
                             "Email"}
                         </td>
-                        <td
-                          className="px-3 py-3.5 text-slate-500 truncate"
-                          title={sentAtDisplay}
-                        >
+                        <td className="hidden md:table-cell px-2 lg:px-3 py-3.5 text-slate-500">
                           {sentAtDisplay}
                         </td>
 
-                        <td className="px-3 py-3.5 text-right relative">
-                          <div className="flex items-center justify-end gap-1.5">
+                        <td className="px-3 md:px-2 lg:px-3 py-3.5 text-right relative">
+                          <div className="flex flex-wrap items-center justify-end gap-1.5">
                             <button
                               onClick={() => setInviteEmployee(employee)}
                               className="flex items-center gap-1 rounded-lg bg-[#2D5A5D] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-[#234749] whitespace-nowrap"
@@ -1743,6 +2175,51 @@ export default function EmployeePortal() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile: card layout */}
+          <div className="space-y-3 md:hidden">
+            {paginatedEmployees.map((employee) => (
+              <MobileUserCard
+                key={employee.id}
+                employee={employee}
+                expanded={expandedUserIds.includes(employee.id)}
+                onToggle={() => toggleExpandUser(employee.id)}
+                menuOpen={openMenuId === employee.id}
+                onToggleMenu={() =>
+                  setOpenMenuId(openMenuId === employee.id ? null : employee.id)
+                }
+                onCloseMenu={() => setOpenMenuId(null)}
+                onSendPass={() => setInviteEmployee(employee)}
+                onAddChild={(entryType) =>
+                  setNewModalConfig({
+                    parentUserId: employee.id,
+                    entryType,
+                    chapterId: employee.chapter,
+                    chapterName: employee.chapter_name || "",
+                  })
+                }
+                onViewDetails={() => {
+                  setSelectedEmployee(employee);
+                  setIsDetailsModalOpen(true);
+                }}
+                onEdit={() => setEditingEmployee(employee)}
+                onDelete={() => handleDeleteEmployee(employee.id)}
+                sendingChildKey={sendingChildKey}
+                deletingChildKey={deletingChildKey}
+                onSendChild={handleSendVisitorSubstitute}
+                onDeleteChild={handleDeleteVisitorSubstitute}
+              />
+            ))}
+          </div>
+
+          <Pagination
+            currentPage={safePage}
+            totalPages={totalPages}
+            totalItems={filteredEmployees.length}
+            pageSize={PAGE_SIZE}
+            onPageChange={handlePageChange}
+          />
+          </>
         )}
       </main>
 
