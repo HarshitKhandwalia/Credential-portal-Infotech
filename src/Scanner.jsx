@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { API_BASE_URL, API_ROOT } from "./config";
 import PortalNav from "./PortalNav";
+import logo from "./assets/BNI-LOGO.jpeg";
 
 function formatDateTime(iso) {
   if (!iso) return "";
@@ -423,7 +424,7 @@ export default function Scanner() {
           )}
           <button
             onClick={handleReset}
-            className="w-full rounded-lg bg-[#2D5A5D] px-6 py-3 text-sm font-semibold text-white hover:bg-[#234749]"
+            className="w-full rounded-lg bg-[#C5242A] px-6 py-3 text-sm font-semibold text-white hover:bg-[#A81D23]"
           >
             Scan Next
           </button>
@@ -454,7 +455,7 @@ export default function Scanner() {
           )}
           <button
             onClick={handleReset}
-            className="w-full rounded-lg bg-[#2D5A5D] px-6 py-3 text-sm font-semibold text-white hover:bg-[#234749]"
+            className="w-full rounded-lg bg-[#C5242A] px-6 py-3 text-sm font-semibold text-white hover:bg-[#A81D23]"
           >
             Scan Another Code
           </button>
@@ -484,7 +485,7 @@ export default function Scanner() {
           )}
           <button
             onClick={handleReset}
-            className="w-full rounded-lg bg-[#2D5A5D] px-6 py-3 text-sm font-semibold text-white hover:bg-[#234749]"
+            className="w-full rounded-lg bg-[#C5242A] px-6 py-3 text-sm font-semibold text-white hover:bg-[#A81D23]"
           >
             Try Another Code
           </button>
@@ -506,7 +507,7 @@ export default function Scanner() {
           </p>
           <button
             onClick={handleReset}
-            className="w-full rounded-lg bg-[#2D5A5D] px-6 py-3 text-sm font-semibold text-white hover:bg-[#234749]"
+            className="w-full rounded-lg bg-[#C5242A] px-6 py-3 text-sm font-semibold text-white hover:bg-[#A81D23]"
           >
             Try Again
           </button>
@@ -528,7 +529,7 @@ export default function Scanner() {
         </p>
         <button
           onClick={handleReset}
-          className="w-full rounded-lg bg-[#2D5A5D] px-6 py-3 text-sm font-semibold text-white hover:bg-[#234749]"
+          className="w-full rounded-lg bg-[#C5242A] px-6 py-3 text-sm font-semibold text-white hover:bg-[#A81D23]"
         >
           Try Another Code
         </button>
@@ -537,18 +538,19 @@ export default function Scanner() {
   };
 
   return (
-    <div className="min-h-screen bg-[#EEF4F4]">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-4">
+    <div className="min-h-screen bg-white">
+      <header className="border-b-4 border-[#C5242A] bg-white">
+        <div className="flex w-full flex-wrap items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
+            <img src={logo} alt="BNI Logo" className="-my-3 h-16 sm:h-20 w-auto object-contain" />
             <Link
               to="/"
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[#2D5A5D]/40 hover:bg-[#2D5A5D]/5 hover:text-[#2D5A5D]"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[#C5242A]/40 hover:bg-[#C5242A]/5 hover:text-[#C5242A]"
             >
               <ArrowLeft size={16} />
               Back to Portal
             </Link>
-            <h1 className="text-2xl font-bold text-slate-800">QR Scanner</h1>
+            <h1 className="text-2xl font-bold text-[#C5242A]">QR Scanner</h1>
           </div>
           <PortalNav />
         </div>
@@ -561,7 +563,7 @@ export default function Scanner() {
               <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
                 {selectedChapter && (
                   <div className="inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
-                    <BookOpen size={15} className="shrink-0 text-[#2D5A5D]" />
+                    <BookOpen size={15} className="shrink-0 text-[#C5242A]" />
                     <div className="min-w-0">
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                         Chapter
@@ -574,7 +576,7 @@ export default function Scanner() {
                 )}
                 {selectedSession && (
                   <div className="inline-flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
-                    <Calendar size={15} className="shrink-0 text-[#2D5A5D]" />
+                    <Calendar size={15} className="shrink-0 text-[#C5242A]" />
                     <div className="min-w-0">
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                         Session
@@ -592,7 +594,7 @@ export default function Scanner() {
                   <button
                     type="button"
                     onClick={changeChapter}
-                    className="inline-flex items-center justify-center rounded-lg border border-[#2D5A5D]/30 bg-white px-3 py-2 text-xs font-semibold text-[#2D5A5D] transition hover:bg-[#2D5A5D] hover:text-white"
+                    className="inline-flex items-center justify-center rounded-lg border border-[#C5242A]/30 bg-white px-3 py-2 text-xs font-semibold text-[#C5242A] transition hover:bg-[#C5242A] hover:text-white"
                   >
                     Change Chapter
                   </button>
@@ -601,7 +603,7 @@ export default function Scanner() {
                   <button
                     type="button"
                     onClick={changeSession}
-                    className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-[#2D5A5D]/40 hover:bg-[#2D5A5D]/5 hover:text-[#2D5A5D]"
+                    className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-[#C5242A]/40 hover:bg-[#C5242A]/5 hover:text-[#C5242A]"
                   >
                     Change Session
                   </button>
@@ -613,7 +615,7 @@ export default function Scanner() {
 
         {step === "chapter" && (
           <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-            <h2 className="mb-2 text-lg font-semibold text-slate-800">Select Chapter</h2>
+            <h2 className="mb-2 text-lg font-semibold text-[#9B1C21]">Select Chapter</h2>
             <p className="mb-6 text-sm text-slate-600">
               Choose the chapter whose session you are scanning for.
             </p>
@@ -636,15 +638,15 @@ export default function Scanner() {
                     <button
                       type="button"
                       onClick={() => selectChapter(ch)}
-                      className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-left transition hover:border-[#2D5A5D] hover:bg-[#2D5A5D]/5"
+                      className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-left transition hover:border-[#C5242A] hover:bg-[#C5242A]/5"
                     >
                       <span className="flex items-center gap-3">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#2D5A5D]/10 text-[#2D5A5D]">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#C5242A]/10 text-[#C5242A]">
                           <BookOpen size={16} />
                         </span>
                         <span className="text-sm font-semibold text-slate-800">{ch.name}</span>
                       </span>
-                      <span className="rounded-lg bg-[#2D5A5D] px-3 py-1.5 text-xs font-semibold text-white">
+                      <span className="rounded-lg bg-[#C5242A] px-3 py-1.5 text-xs font-semibold text-white">
                         Select
                       </span>
                     </button>
@@ -657,7 +659,7 @@ export default function Scanner() {
 
         {step === "session" && (
           <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-            <h2 className="mb-2 text-lg font-semibold text-slate-800">Select Session</h2>
+            <h2 className="mb-2 text-lg font-semibold text-[#9B1C21]">Select Session</h2>
             <p className="mb-6 text-sm text-slate-600">
               Attendance is recorded per session. Cancelled sessions cannot be scanned.
             </p>
@@ -680,10 +682,10 @@ export default function Scanner() {
                     <button
                       type="button"
                       onClick={() => selectSession(session)}
-                      className="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-left transition hover:border-[#2D5A5D] hover:bg-[#2D5A5D]/5"
+                      className="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-left transition hover:border-[#C5242A] hover:bg-[#C5242A]/5"
                     >
                       <span className="flex min-w-0 items-center gap-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#2D5A5D]/10 text-[#2D5A5D]">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#C5242A]/10 text-[#C5242A]">
                           <Calendar size={16} />
                         </span>
                         <span className="min-w-0">
@@ -696,7 +698,7 @@ export default function Scanner() {
                           </span>
                         </span>
                       </span>
-                      <span className="shrink-0 rounded-lg bg-[#2D5A5D] px-3 py-1.5 text-xs font-semibold text-white">
+                      <span className="shrink-0 rounded-lg bg-[#C5242A] px-3 py-1.5 text-xs font-semibold text-white">
                         Select
                       </span>
                     </button>
@@ -714,7 +716,7 @@ export default function Scanner() {
                 scanResult ? "hidden" : ""
               }`}
             >
-              <h2 className="mb-2 text-lg font-semibold text-slate-800">Scan Credential</h2>
+              <h2 className="mb-2 text-lg font-semibold text-[#9B1C21]">Scan Credential</h2>
               <p className="mb-6 text-sm text-slate-600">
                 Point your camera at the credential code for{" "}
                 <span className="font-medium text-slate-800">
@@ -749,7 +751,7 @@ export default function Scanner() {
                     type="button"
                     onClick={() => startCamera()}
                     disabled={cameraStarting || loading}
-                    className="inline-flex items-center gap-2 rounded-lg bg-[#2D5A5D] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#234749] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-lg bg-[#C5242A] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#A81D23] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Camera size={16} />
                     {cameraStarting ? "Starting..." : "Start Camera"}
@@ -770,7 +772,7 @@ export default function Scanner() {
                     type="button"
                     onClick={() => switchCamera()}
                     disabled={cameraStarting || loading}
-                    className="inline-flex items-center gap-2 rounded-lg border border-[#2D5A5D]/30 bg-white px-4 py-2.5 text-sm font-semibold text-[#2D5A5D] transition hover:bg-[#2D5A5D] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-lg border border-[#C5242A]/30 bg-white px-4 py-2.5 text-sm font-semibold text-[#C5242A] transition hover:bg-[#C5242A] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <SwitchCamera size={16} />
                     Switch Camera

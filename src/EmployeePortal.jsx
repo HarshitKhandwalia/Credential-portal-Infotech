@@ -15,7 +15,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import logo from "./assets/logoEI.jpeg";
+import logo from "./assets/BNI-LOGO.jpeg";
 import { API_BASE_URL, API_ROOT } from "./config";
 import PortalNav from "./PortalNav";
 import { toast } from "./toast";
@@ -60,7 +60,7 @@ function SendInviteModal({ employee, onClose, onSend, lockContacts = false }) {
         className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative bg-[#2D5A5D] px-6 py-5 text-white">
+        <div className="relative bg-[#C5242A] px-6 py-5 text-white">
           <button
             onClick={onClose}
             className="absolute right-4 top-4 rounded-full p-1 text-white/80 transition hover:bg-white/10 hover:text-white"
@@ -92,20 +92,20 @@ function SendInviteModal({ employee, onClose, onSend, lockContacts = false }) {
             <div
               className={`rounded-xl border p-4 transition ${
                 useEmail
-                  ? "border-[#2D5A5D]/30 bg-[#2D5A5D]/5"
+                  ? "border-[#C5242A]/30 bg-[#C5242A]/5"
                   : "border-slate-200 bg-slate-50"
               }`}
             >
               <label className="mb-3 flex cursor-pointer items-center justify-between">
                 <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                  <Mail size={16} className="text-[#2D5A5D]" />
+                  <Mail size={16} className="text-[#C5242A]" />
                   Email
                 </span>
                 <input
                   type="checkbox"
                   checked={useEmail}
                   onChange={(e) => setUseEmail(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-[#2D5A5D] focus:ring-[#2D5A5D]"
+                  className="h-4 w-4 rounded border-slate-300 text-[#C5242A] focus:ring-[#C5242A]"
                 />
               </label>
               <label className="mb-1 block text-xs font-medium text-slate-500">
@@ -118,9 +118,9 @@ function SendInviteModal({ employee, onClose, onSend, lockContacts = false }) {
                 disabled={!useEmail || lockContacts}
                 readOnly={lockContacts}
                 placeholder="name@company.com"
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:ring-2 focus:ring-[#2D5A5D]/20 disabled:bg-slate-100 disabled:text-slate-400"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#C5242A] focus:ring-2 focus:ring-[#C5242A]/20 disabled:bg-slate-100 disabled:text-slate-400"
               />
-              <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-[#2D5A5D]">
+              <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-[#C5242A]">
                 <CheckCircle2 size={14} />
                 Portal Link Included
               </p>
@@ -175,7 +175,7 @@ function SendInviteModal({ employee, onClose, onSend, lockContacts = false }) {
           <button
             onClick={handleSend}
             disabled={!canSend || sending}
-            className="flex items-center gap-2 rounded-lg bg-[#2D5A5D] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#234749] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg bg-[#C5242A] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#A81D23] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Send size={15} />
             {sending ? "Sending..." : "Send Pass"}
@@ -240,7 +240,7 @@ function EditEmployeeModal({ employee, chapters, onClose, onSave }) {
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#2D5A5D]"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C5242A]"
             />
           </div>
           <div>
@@ -254,7 +254,7 @@ function EditEmployeeModal({ employee, chapters, onClose, onSave }) {
                 setFormData({ ...formData, membership_id: e.target.value })
               }
               placeholder="MEM-67890"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#2D5A5D]"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C5242A]"
             />
           </div>
           <div>
@@ -267,7 +267,7 @@ function EditEmployeeModal({ employee, chapters, onClose, onSave }) {
                 setFormData({ ...formData, chapter: e.target.value })
               }
               required
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#2D5A5D]"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C5242A]"
             >
               <option value="">Select chapter</option>
               {chapters.map((ch) => (
@@ -287,7 +287,7 @@ function EditEmployeeModal({ employee, chapters, onClose, onSave }) {
               onChange={(e) =>
                 setFormData({ ...formData, phone: e.target.value })
               }
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#2D5A5D]"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C5242A]"
             />
           </div>
           <div>
@@ -300,7 +300,7 @@ function EditEmployeeModal({ employee, chapters, onClose, onSave }) {
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
               }
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#2D5A5D]"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C5242A]"
             />
           </div>
           <div className="flex justify-end gap-2 pt-4">
@@ -314,7 +314,7 @@ function EditEmployeeModal({ employee, chapters, onClose, onSave }) {
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-lg bg-[#2D5A5D] px-4 py-2 text-sm font-semibold text-white hover:bg-[#234749]"
+              className="rounded-lg bg-[#C5242A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#A81D23]"
             >
               {submitting ? "Saving..." : "Save Changes"}
             </button>
@@ -489,32 +489,34 @@ function ChildCredentialRow({
     : "N/A";
 
   return (
-    <tr className="bg-slate-50/70 text-xs text-slate-600 border-t border-slate-100">
-      <td className="py-2.5 pl-10 pr-3 font-medium text-slate-700">
-        ↳{" "}
-        <span
-          className={`rounded px-1.5 py-0.5 text-[10px] font-semibold mr-1 ${badgeClass}`}
-        >
-          {badgeLabel}
-        </span>
-        {displayName}
+    <tr className="bg-red-50/40 text-xs text-slate-600 border-t border-red-100">
+      <td className="py-2.5 pl-6 pr-2 lg:pl-10 lg:pr-3 font-medium text-slate-700">
+        <div className="[overflow-wrap:anywhere]">
+          ↳{" "}
+          <span
+            className={`rounded px-1.5 py-0.5 text-[10px] font-semibold mr-1 ${badgeClass}`}
+          >
+            {badgeLabel}
+          </span>
+          {displayName}
+        </div>
       </td>
-      <td className="px-3 py-2.5" title={sessionLabel}>
+      <td className="px-2 lg:px-3 py-2.5 [overflow-wrap:anywhere]" title={sessionLabel}>
         {sessionLabel}
       </td>
-      <td className="px-3 py-2.5">{child.phone || "N/A"}</td>
-      <td className="px-3 py-2.5">{child.email || "N/A"}</td>
-      <td className="px-3 py-2.5">{child.primary_credential || "QR"}</td>
-      <td className="px-3 py-2.5" title={sentAtDisplay}>
+      <td className="px-2 lg:px-3 py-2.5 [overflow-wrap:anywhere]">{child.phone || "N/A"}</td>
+      <td className="px-2 lg:px-3 py-2.5 [overflow-wrap:anywhere]">{child.email || "N/A"}</td>
+      <td className="px-2 lg:px-3 py-2.5">{child.primary_credential || "QR"}</td>
+      <td className="px-2 lg:px-3 py-2.5" title={sentAtDisplay}>
         {sentAtDisplay}
       </td>
-      <td className="px-3 py-2.5 text-right">
-        <div className="inline-flex items-center justify-end gap-1.5">
+      <td className="px-2 lg:px-3 py-2.5 text-right">
+        <div className="flex flex-wrap items-center justify-end gap-1.5">
           <button
             type="button"
             onClick={() => onSend(parentId, child, type)}
             disabled={isBusy}
-            className="inline-flex items-center gap-1 rounded-lg bg-[#2D5A5D] px-2 py-1 text-[10px] font-semibold text-white transition hover:bg-[#234749] disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap"
+            className="inline-flex items-center gap-1 rounded-lg bg-[#C5242A] px-2 py-1 text-[10px] font-semibold text-white transition hover:bg-[#A81D23] disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap"
           >
             <Send size={11} />
             {isSending ? "Sending..." : "Send Pass"}
@@ -732,7 +734,7 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
         className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative bg-[#2D5A5D] px-6 py-5 text-white">
+        <div className="relative bg-[#C5242A] px-6 py-5 text-white">
           <button
             onClick={onClose}
             className="absolute right-4 top-4 rounded-full p-1 text-white/80 transition hover:bg-white/10 hover:text-white"
@@ -772,7 +774,7 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
                   setValidationError("");
                 }}
                 placeholder="Enter first name"
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#C5242A] focus:bg-white focus:ring-2 focus:ring-[#C5242A]/20"
               />
             </div>
             <div>
@@ -787,7 +789,7 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
                   setValidationError("");
                 }}
                 placeholder="Enter last name"
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#C5242A] focus:bg-white focus:ring-2 focus:ring-[#C5242A]/20"
               />
             </div>
           </div>
@@ -805,7 +807,7 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
                   setValidationError("");
                 }}
                 placeholder="MEM-67890"
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#C5242A] focus:bg-white focus:ring-2 focus:ring-[#C5242A]/20"
               />
             </div>
           )}
@@ -829,7 +831,7 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
                   setChapter(e.target.value);
                   setValidationError("");
                 }}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#C5242A] focus:bg-white focus:ring-2 focus:ring-[#C5242A]/20"
               >
                 <option value="">Select chapter</option>
                 {chapters.map((ch) => (
@@ -853,7 +855,7 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
                   setValidationError("");
                 }}
                 disabled={loadingSessions || sessions.length === 0}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#C5242A] focus:bg-white focus:ring-2 focus:ring-[#C5242A]/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
               >
                 <option value="">
                   {loadingSessions
@@ -885,7 +887,7 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
                 value={email}
                 onChange={handleEmailChange}
                 placeholder="name@company.com"
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-800 outline-none focus:border-[#C5242A] focus:bg-white focus:ring-2 focus:ring-[#C5242A]/20"
               />
             </div>
           </div>
@@ -904,7 +906,7 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
                 value={phone}
                 onChange={handlePhoneChange}
                 placeholder="+1 (555) 000-0000"
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-800 outline-none focus:border-[#C5242A] focus:bg-white focus:ring-2 focus:ring-[#C5242A]/20"
               />
             </div>
             <span className="text-xs font-normal text-slate-400">
@@ -939,7 +941,7 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
           <button
             onClick={handleSubmit}
             disabled={!canSubmit || submitting}
-            className="flex items-center gap-2 rounded-lg bg-[#2D5A5D] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#234749] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg bg-[#C5242A] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#A81D23] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus size={15} />
             {submitting ? "Adding..." : "Add User"}
@@ -951,6 +953,283 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
 }
 
 // Main Employee Portal Component
+// ---------- Mobile card components (screens below 768px) ----------
+function formatSentAt(item, includeExtra = false) {
+  const raw =
+    item.sent_at ||
+    item.sentAt ||
+    item.date_sent ||
+    item.dateSent ||
+    (includeExtra ? item.created_at || item.invited_at : null);
+  return raw
+    ? new Date(raw).toLocaleString([], { dateStyle: "short", timeStyle: "short" })
+    : "N/A";
+}
+
+function MobileDetailRow({ label, value }) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-slate-100 py-2.5 text-sm last:border-b-0">
+      <span className="shrink-0 text-slate-400">{label}:</span>
+      <span className="min-w-0 text-right font-medium text-slate-700 [overflow-wrap:anywhere]">
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function MobileChildCard({
+  child,
+  type,
+  badgeClass,
+  badgeLabel,
+  parentId,
+  sendingKey,
+  deletingKey,
+  onSend,
+  onDelete,
+}) {
+  const displayName =
+    child.name || `${child.first_name || ""} ${child.last_name || ""}`.trim();
+  const actionKey = `${parentId}-${type}-${child.id}`;
+  const isSending = sendingKey === actionKey;
+  const isDeleting = deletingKey === actionKey;
+  const isBusy = isSending || isDeleting;
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+      <div className="mb-1 flex items-center gap-2">
+        <span
+          className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold ${badgeClass}`}
+        >
+          {badgeLabel}
+        </span>
+        <span className="min-w-0 text-sm font-bold text-[#9B1C21] [overflow-wrap:anywhere]">
+          {displayName}
+        </span>
+      </div>
+      <MobileDetailRow label="Session" value={childSessionTitle(child)} />
+      <MobileDetailRow label="Phone" value={child.phone || "N/A"} />
+      <MobileDetailRow label="Email" value={child.email || "N/A"} />
+      <MobileDetailRow label="Type" value={child.primary_credential || "QR"} />
+      <MobileDetailRow label="Sent at" value={formatSentAt(child)} />
+      <div className="mt-3 flex gap-2">
+        <button
+          type="button"
+          onClick={() => onSend(parentId, child, type)}
+          disabled={isBusy}
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#C5242A] py-2 text-xs font-semibold text-white transition hover:bg-[#A81D23] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Send size={13} />
+          {isSending ? "Sending..." : "Send Pass"}
+        </button>
+        <button
+          type="button"
+          onClick={() => onDelete(parentId, child, type)}
+          disabled={isBusy}
+          title={`Delete ${badgeLabel}`}
+          className="flex items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Trash2 size={13} />
+          {isDeleting ? "Deleting..." : "Delete"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MobileUserCard({
+  employee,
+  expanded,
+  onToggle,
+  menuOpen,
+  onToggleMenu,
+  onCloseMenu,
+  onSendPass,
+  onAddChild,
+  onMarkPaid,
+  onEdit,
+  onDelete,
+  sendingChildKey,
+  deletingChildKey,
+  onSendChild,
+  onDeleteChild,
+}) {
+  const displayName =
+    employee.name ||
+    `${employee.first_name || ""} ${employee.last_name || ""}`.trim();
+  const hasSubordinates =
+    (employee.visitors && employee.visitors.length > 0) ||
+    (employee.substitutes && employee.substitutes.length > 0);
+
+  const menuItemClass =
+    "flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50";
+
+  return (
+    <div
+      className={`relative rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ${
+        menuOpen ? "z-20" : ""
+      }`}
+    >
+      {/* Tap outside to close the menu */}
+      {menuOpen && <div className="fixed inset-0 z-10" onClick={onCloseMenu} />}
+
+      {/* Top row: name dropdown (left) + 3 dots (right) */}
+      <div className="flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={expanded}
+          className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
+        >
+          <span className="text-lg font-bold text-[#9B1C21] [overflow-wrap:anywhere]">
+            {displayName}
+          </span>
+          {expanded ? (
+            <ChevronUp size={20} className="shrink-0 text-slate-500" />
+          ) : (
+            <ChevronDown size={20} className="shrink-0 text-slate-500" />
+          )}
+        </button>
+
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleMenu();
+            }}
+            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+            aria-label="More actions"
+          >
+            <MoreVertical size={20} />
+          </button>
+
+          {menuOpen && (
+            <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+              <button
+                type="button"
+                onClick={() => {
+                  onAddChild("visitor");
+                  onCloseMenu();
+                }}
+                className={menuItemClass}
+              >
+                <UserPlus size={15} /> Visitor
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onAddChild("substitute");
+                  onCloseMenu();
+                }}
+                className={menuItemClass}
+              >
+                <UserPlus size={15} /> Substitute
+              </button>
+              <div className="my-1 border-t border-slate-100" />
+              <button
+                type="button"
+                onClick={() => {
+                  onMarkPaid();
+                  onCloseMenu();
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-emerald-600 hover:bg-emerald-50"
+              >
+                <CheckCircle2 size={15} /> Mark Paid
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onEdit();
+                  onCloseMenu();
+                }}
+                className={menuItemClass}
+              >
+                <Edit size={15} /> Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onDelete();
+                  onCloseMenu();
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+              >
+                <Trash2 size={15} /> Delete
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Expandable details */}
+      {expanded && (
+        <div className="mt-2">
+          <MobileDetailRow
+            label="Chapter"
+            value={employee.chapter_name || employee.chapter || "N/A"}
+          />
+          <MobileDetailRow label="Phone" value={employee.phone || "N/A"} />
+          <MobileDetailRow label="Email" value={employee.email || "N/A"} />
+          <MobileDetailRow
+            label="Type"
+            value={
+              employee.primary_credential || employee.primaryCredential || "QR"
+            }
+          />
+          <MobileDetailRow label="Sent at" value={formatSentAt(employee, true)} />
+
+          {hasSubordinates && (
+            <div className="mt-3 space-y-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                Visitors &amp; Substitutes
+              </p>
+              {employee.visitors?.map((visitor) => (
+                <MobileChildCard
+                  key={`v-${visitor.id}`}
+                  child={visitor}
+                  type="visitor"
+                  badgeClass="bg-blue-100 text-blue-700"
+                  badgeLabel="Visitor"
+                  parentId={employee.id}
+                  sendingKey={sendingChildKey}
+                  deletingKey={deletingChildKey}
+                  onSend={onSendChild}
+                  onDelete={onDeleteChild}
+                />
+              ))}
+              {employee.substitutes?.map((sub) => (
+                <MobileChildCard
+                  key={`s-${sub.id}`}
+                  child={sub}
+                  type="substitute"
+                  badgeClass="bg-purple-100 text-purple-700"
+                  badgeLabel="Substitute"
+                  parentId={employee.id}
+                  sendingKey={sendingChildKey}
+                  deletingKey={deletingChildKey}
+                  onSend={onSendChild}
+                  onDelete={onDeleteChild}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Send Pass */}
+      <button
+        type="button"
+        onClick={onSendPass}
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#C5242A] py-3 text-sm font-semibold text-white transition hover:bg-[#A81D23]"
+      >
+        <Send size={16} />
+        <span>Send Pass</span>
+      </button>
+    </div>
+  );
+}
+
 export default function EmployeePortal() {
   const [employees, setEmployees] = useState([]);
   const [chapters, setChapters] = useState([]);
@@ -1517,15 +1796,15 @@ export default function EmployeePortal() {
   };
 
   return (
-    <div className="min-h-screen bg-[#EEF4F4]">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-4">
+      <header className="border-b-4 border-[#C5242A] bg-white">
+        <div className="flex w-full flex-wrap items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
             <img
               src={logo}
-              alt="Enterprise-Infotech Logo"
-              className="h-14 w-auto object-contain"
+              alt="BNI Logo"
+              className="-my-3 h-16 sm:h-20 w-auto object-contain"
             />
             <PortalNav />
           </div>
@@ -1538,12 +1817,12 @@ export default function EmployeePortal() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search User Details..."
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none focus:border-[#2D5A5D] focus:ring-2 focus:ring-[#2D5A5D]/20"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none focus:border-[#C5242A] focus:ring-2 focus:ring-[#C5242A]/20"
             />
           </div>
           <button
             onClick={() => setNewModalConfig({})}
-            className="flex items-center gap-2 rounded-lg bg-[#2D5A5D] px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white transition hover:bg-[#234749]"
+            className="flex items-center gap-2 rounded-lg bg-[#C5242A] px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white transition hover:bg-[#A81D23]"
           >
             <Plus size={16} />
             <span>New Pass</span>
@@ -1561,16 +1840,16 @@ export default function EmployeePortal() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search User Credentials..."
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none focus:border-[#2D5A5D] focus:ring-2 focus:ring-[#2D5A5D]/20"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none focus:border-[#C5242A] focus:ring-2 focus:ring-[#C5242A]/20"
             />
           </div>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="mx-auto max-w-[98%] px-2 sm:px-4 py-6 sm:py-8">
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="mb-6">
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#C5242A]">
             User Details
           </h1>
         </div>
@@ -1584,17 +1863,19 @@ export default function EmployeePortal() {
             No Users match this search.
           </div>
         ) : (
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-visible">
-            <table className="w-full text-left text-sm text-slate-600">
-              <thead className="bg-slate-50 text-xs uppercase text-slate-500 border-b border-slate-200">
+          <>
+          {/* Tablet / laptop / desktop: table */}
+          <div className="hidden md:block rounded-xl border border-slate-200 bg-white shadow-sm overflow-visible">
+            <table className="w-full table-fixed text-left text-xs lg:text-sm text-slate-600">
+              <thead className="bg-red-50 text-[10px] lg:text-xs uppercase text-red-900/70 border-b border-red-100">
                 <tr>
-                  <th className="px-3 py-3.5 font-semibold">User</th>
-                  <th className="px-3 py-3.5 font-semibold">Chapter</th>
-                  <th className="px-3 py-3.5 font-semibold">Phone</th>
-                  <th className="px-3 py-3.5 font-semibold">Email</th>
-                  <th className="px-3 py-3.5 font-semibold">Type</th>
-                  <th className="px-3 py-3.5 font-semibold">Sent At</th>
-                  <th className="px-3 py-3.5 font-semibold text-right">Actions</th>
+                  <th className="md:w-[16%] lg:w-[17%] rounded-tl-xl px-2 lg:px-3 py-3.5 font-semibold">User</th>
+                  <th className="md:w-[10%] lg:w-[11%] px-2 lg:px-3 py-3.5 font-semibold">Chapter</th>
+                  <th className="md:w-[13%] lg:w-[12%] px-2 lg:px-3 py-3.5 font-semibold">Phone</th>
+                  <th className="md:w-[21%] lg:w-[22%] px-2 lg:px-3 py-3.5 font-semibold">Email</th>
+                  <th className="md:w-[8%] lg:w-[8%] px-2 lg:px-3 py-3.5 font-semibold">Type</th>
+                  <th className="md:w-[14%] lg:w-[14%] px-2 lg:px-3 py-3.5 font-semibold">Sent At</th>
+                  <th className="md:w-[18%] lg:w-[16%] rounded-tr-xl px-2 lg:px-3 py-3.5 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -1625,13 +1906,13 @@ export default function EmployeePortal() {
                   return (
                     <React.Fragment key={employee.id}>
                       {/* MAIN USER ROW */}
-                      <tr className="hover:bg-slate-50/80 transition">
-                        <td className="px-3 py-3.5 font-medium text-slate-900">
+                      <tr className="hover:bg-red-50/50 transition">
+                        <td className="px-2 lg:px-3 py-3.5 font-medium text-slate-900">
                           <div className="flex items-center gap-2">
-                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700">
+                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-100 text-xs font-bold text-[#A81D23]">
                               {displayName.charAt(0).toUpperCase()}
                             </span>
-                            <span className="truncate" title={displayName}>
+                            <span className="min-w-0 font-semibold text-[#9B1C21] [overflow-wrap:anywhere]" title={displayName}>
                               {displayName}
                             </span>
 
@@ -1639,7 +1920,7 @@ export default function EmployeePortal() {
                             {hasSubordinates && (
                               <button
                                 onClick={() => toggleExpandUser(employee.id)}
-                                className="rounded p-1 text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition ml-1"
+                                className="shrink-0 rounded p-1 text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition"
                                 title="Toggle Visitor/Substitute details"
                               >
                                 {expandedUserIds.includes(employee.id) ? (
@@ -1652,44 +1933,42 @@ export default function EmployeePortal() {
                           </div>
                         </td>
                         <td
-                          className="px-3 py-3.5 text-slate-600 truncate"
-                          title={
-                            employee.chapter_name || employee.chapter || "N/A"
-                          }
+                          className="px-2 lg:px-3 py-3.5 text-slate-600 [overflow-wrap:anywhere]"
+                          title={employee.chapter_name || employee.chapter || "N/A"}
                         >
                           {employee.chapter_name || employee.chapter || "N/A"}
                         </td>
                         <td
-                          className="px-3 py-3.5 text-slate-500 truncate"
+                          className="px-2 lg:px-3 py-3.5 text-slate-500 [overflow-wrap:anywhere]"
                           title={employee.phone || "N/A"}
                         >
                           {employee.phone || "N/A"}
                         </td>
                         <td
-                          className="px-3 py-3.5 text-slate-500 truncate"
+                          className="px-2 lg:px-3 py-3.5 text-slate-500 [overflow-wrap:anywhere]"
                           title={employee.email || "N/A"}
                         >
                           {employee.email || "N/A"}
                         </td>
-                        <td className="px-3 py-3.5 truncate">
+                        <td className="px-2 lg:px-3 py-3.5">
                           {employee.primary_credential ||
                             employee.primaryCredential ||
                             "QR"}
                         </td>
                         <td
-                          className="px-3 py-3.5 text-slate-500 truncate"
+                          className="px-2 lg:px-3 py-3.5 text-slate-500"
                           title={sentAtDisplay}
                         >
                           {sentAtDisplay}
                         </td>
 
-                        <td className="px-3 py-3.5 text-right relative">
-                          <div className="flex items-center justify-end gap-1.5">
+                        <td className="px-2 lg:px-3 py-3.5 text-right relative">
+                          <div className="flex flex-wrap items-center justify-end gap-1.5">
                             <button
                               onClick={() =>
                                 setPassTarget({ kind: "member", record: employee })
                               }
-                              className="flex items-center gap-1 rounded-lg bg-[#2D5A5D] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-[#234749] whitespace-nowrap"
+                              className="flex items-center gap-1 rounded-lg bg-[#C5242A] px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-[#A81D23] whitespace-nowrap"
                             >
                               <Send size={12} />
                               <span>Send Pass</span>
@@ -1833,6 +2112,44 @@ export default function EmployeePortal() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile: card layout */}
+          <div className="space-y-3 md:hidden">
+            {filteredEmployees.map((employee) => (
+              <MobileUserCard
+                key={employee.id}
+                employee={employee}
+                expanded={expandedUserIds.includes(employee.id)}
+                onToggle={() => toggleExpandUser(employee.id)}
+                menuOpen={openMenuId === employee.id}
+                onToggleMenu={() =>
+                  setOpenMenuId(openMenuId === employee.id ? null : employee.id)
+                }
+                onCloseMenu={() => setOpenMenuId(null)}
+                onSendPass={() =>
+                  setPassTarget({ kind: "member", record: employee })
+                }
+                onAddChild={(entryType) =>
+                  setNewModalConfig({
+                    parentUserId: employee.id,
+                    entryType,
+                    chapterId: employee.chapter,
+                    chapterName: employee.chapter_name || "",
+                  })
+                }
+                onMarkPaid={() => handleMarkPaid(employee)}
+                onEdit={() => setEditingEmployee(employee)}
+                onDelete={() => handleDeleteEmployee(employee.id)}
+                sendingChildKey={sendingChildKey}
+                deletingChildKey={deletingChildKey}
+                onSendChild={(parentId, child, type) =>
+                  setPassTarget({ kind: "child", parentId, child, type })
+                }
+                onDeleteChild={handleDeleteVisitorSubstitute}
+              />
+            ))}
+          </div>
+          </>
         )}
       </main>
 
