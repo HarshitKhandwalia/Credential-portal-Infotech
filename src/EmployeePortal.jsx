@@ -17,7 +17,10 @@ import {
 } from "lucide-react";
 import logo from "./assets/BNI-LOGO.jpeg";
 import { API_BASE_URL, API_ROOT } from "./config";
+import { apiFetch } from "./api";
+import { useAuth } from "./auth";
 import PortalNav from "./PortalNav";
+import AccountMenu from "./AccountMenu";
 import { toast } from "./toast";
 
 // Send Invite Modal Component
@@ -187,7 +190,7 @@ function SendInviteModal({ employee, onClose, onSend, lockContacts = false }) {
 }
 
 // Edit Employee Modal Component
-function EditEmployeeModal({ employee, chapters, onClose, onSave }) {
+function EditEmployeeModal({ employee, chapters, assignChapter, onClose, onSave }) {
   const [formData, setFormData] = useState({
     name:
       employee.name ||
@@ -205,15 +208,15 @@ function EditEmployeeModal({ employee, chapters, onClose, onSave }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.chapter) {
+    if (assignChapter && !formData.chapter) {
       toast.error("Chapter is required.");
       return;
     }
     setSubmitting(true);
-    await onSave(employee.id, {
-      ...formData,
-      chapter: Number(formData.chapter),
-    });
+    const payload = { ...formData };
+    if (assignChapter) payload.chapter = Number(formData.chapter);
+    else delete payload.chapter;
+    await onSave(employee.id, payload);
     setSubmitting(false);
   };
 
@@ -257,6 +260,7 @@ function EditEmployeeModal({ employee, chapters, onClose, onSave }) {
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C5242A]"
             />
           </div>
+          {assignChapter && (
           <div>
             <label className="block text-xs font-medium text-slate-500 mb-1">
               Chapter <span className="text-red-500">*</span>
@@ -277,6 +281,7 @@ function EditEmployeeModal({ employee, chapters, onClose, onSave }) {
               ))}
             </select>
           </div>
+          )}
           <div>
             <label className="block text-xs font-medium text-slate-500 mb-1">
               Phone Number
@@ -538,7 +543,7 @@ function ChildCredentialRow({
 }
 
 // New Employee / Visitor / Substitute Modal Component
-function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
+function NewEmployeeModal({ modalConfig, chapters, assignChapter, onClose, onAdd }) {
   const {
     parentUserId,
     entryType,
@@ -588,7 +593,7 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
       setSessionId("");
       setValidationError("");
       try {
-        const res = await fetch(
+        const res = await apiFetch(
           `${API_ROOT}/chapters/${lockedChapterId}/sessions/`
         );
         if (!res.ok) throw new Error(`Failed to load sessions (${res.status})`);
@@ -632,7 +637,7 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
     : firstName.trim() !== "" &&
       lastName.trim() !== "" &&
       hasContactMethod &&
-      chapter !== "";
+      (!assignChapter || chapter !== "");
 
   const handleEmailChange = (e) => {
     setEmail(e.target.value);
@@ -677,7 +682,7 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
         );
         return;
       }
-    } else if (!chapter) {
+    } else if (assignChapter && !chapter) {
       setValidationError("Please select a chapter.");
       return;
     }
@@ -702,7 +707,10 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
         phone: phoneTrimmed,
         primaryCredential: "QR",
         secondaryCredential: "Email",
-        chapter: Number(isVisitorOrSubstitute ? lockedChapterId : chapter),
+        chapter:
+          !assignChapter && !isVisitorOrSubstitute
+            ? undefined
+            : Number(isVisitorOrSubstitute ? lockedChapterId : chapter),
         chapter_name: isVisitorOrSubstitute
           ? lockedChapterLabel
           : selectedChapterObj
@@ -812,6 +820,7 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
             </div>
           )}
 
+          {(assignChapter || isVisitorOrSubstitute) && (
           <div className="mt-4">
             <label className="mb-1 block text-sm font-medium text-slate-700">
               Chapter <span className="text-red-500">*</span>
@@ -842,6 +851,7 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
               </select>
             )}
           </div>
+          )}
 
           {isVisitorOrSubstitute && (
             <div className="mt-4">
@@ -1231,6 +1241,7 @@ function MobileUserCard({
 }
 
 export default function EmployeePortal() {
+  const { isSuperadmin } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1257,7 +1268,7 @@ export default function EmployeePortal() {
 
   const fetchEmployees = async () => {
   try {
-    const response = await fetch(API_BASE_URL);
+    const response = await apiFetch(API_BASE_URL);
     if (response.ok) {
       const rawData = await response.json();
       const items = Array.isArray(rawData) ? rawData : rawData.results || [];
@@ -1313,7 +1324,7 @@ export default function EmployeePortal() {
 
   const fetchChapters = async () => {
     try {
-      const response = await fetch(`${API_ROOT}/chapters/?is_active=true`);
+      const response = await apiFetch(`${API_ROOT}/chapters/?is_active=true`);
       if (response.ok) {
         const data = await response.json();
         setChapters(Array.isArray(data) ? data : data.results || []);
@@ -1325,7 +1336,7 @@ export default function EmployeePortal() {
 
   const fetchCurrentCycle = async () => {
     try {
-      const res = await fetch(`${API_ROOT}/cycles-dropdown/`);
+      const res = await apiFetch(`${API_ROOT}/cycles-dropdown/`);
       if (!res.ok) return;
       const data = await res.json();
       const cycleList = data.cycles || [];
@@ -1388,7 +1399,7 @@ export default function EmployeePortal() {
     setSendingChildKey(sendKey);
 
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_ROOT}/sessions/${sessionId}/visitor-substitute/${child.id}/send/`,
         {
           method: "POST",
@@ -1465,7 +1476,7 @@ export default function EmployeePortal() {
     setDeletingChildKey(deleteKey);
 
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_ROOT}/sessions/${sessionId}/visitor-substitute/${child.id}/`,
         {
           method: "DELETE",
@@ -1517,7 +1528,7 @@ export default function EmployeePortal() {
     setMarkPaidDialog((prev) => ({ ...prev, loading: true }));
 
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_ROOT}/credentials/${employee.id}/mark-paid/`,
         {
           method: "POST",
@@ -1560,7 +1571,7 @@ export default function EmployeePortal() {
 
     try {
       if (updatedDetails.email || updatedDetails.phone) {
-        const sendResponse = await fetch(`${API_BASE_URL}${id}/send/`, {
+        const sendResponse = await apiFetch(`${API_BASE_URL}${id}/send/`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1586,7 +1597,7 @@ export default function EmployeePortal() {
         }
       }
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE_URL}${id}/generate-qr-passes/`,
         {
           method: "POST",
@@ -1647,7 +1658,7 @@ export default function EmployeePortal() {
         secondary_credential: "Email",
       };
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_ROOT}/sessions/${formData.sessionId}/visitor-substitute/create/`,
         {
           method: "POST",
@@ -1724,7 +1735,7 @@ export default function EmployeePortal() {
       chapter: formData.chapter,
     };
 
-    const response = await fetch(API_BASE_URL, {
+    const response = await apiFetch(API_BASE_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -1756,7 +1767,7 @@ export default function EmployeePortal() {
 
   const handleUpdateEmployee = async (id, updatedFields) => {
     try {
-      const response = await fetch(`${API_BASE_URL}${id}/`, {
+      const response = await apiFetch(`${API_BASE_URL}${id}/`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedFields),
@@ -1780,7 +1791,7 @@ export default function EmployeePortal() {
   const handleDeleteEmployee = async (id) => {
     if (!window.confirm("Are you sure you want to delete this record?")) return;
     try {
-      const response = await fetch(`${API_BASE_URL}${id}/`, {
+      const response = await apiFetch(`${API_BASE_URL}${id}/`, {
         method: "DELETE",
       });
 
@@ -1820,13 +1831,16 @@ export default function EmployeePortal() {
               className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none focus:border-[#C5242A] focus:ring-2 focus:ring-[#C5242A]/20"
             />
           </div>
-          <button
-            onClick={() => setNewModalConfig({})}
-            className="flex items-center gap-2 rounded-lg bg-[#C5242A] px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white transition hover:bg-[#A81D23]"
-          >
-            <Plus size={16} />
-            <span>New Pass</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setNewModalConfig({})}
+              className="flex items-center gap-2 rounded-lg bg-[#C5242A] px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white transition hover:bg-[#A81D23]"
+            >
+              <Plus size={16} />
+              <span>New Pass</span>
+            </button>
+            <AccountMenu />
+          </div>
         </div>
 
         {/* Mobile Search Bar */}
@@ -2226,6 +2240,7 @@ export default function EmployeePortal() {
         <EditEmployeeModal
           employee={editingEmployee}
           chapters={chapters}
+          assignChapter={isSuperadmin}
           onClose={() => setEditingEmployee(null)}
           onSave={handleUpdateEmployee}
         />
@@ -2235,6 +2250,7 @@ export default function EmployeePortal() {
         <NewEmployeeModal
           modalConfig={newModalConfig}
           chapters={chapters}
+          assignChapter={isSuperadmin}
           onClose={() => setNewModalConfig(null)}
           onAdd={handleAddEmployee}
         />

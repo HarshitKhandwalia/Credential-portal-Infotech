@@ -12,7 +12,9 @@ import {
   SwitchCamera,
 } from "lucide-react";
 import { API_BASE_URL, API_ROOT } from "./config";
+import { apiFetch } from "./api";
 import PortalNav from "./PortalNav";
+import AccountMenu from "./AccountMenu";
 import logo from "./assets/BNI-LOGO.jpeg";
 
 function formatDateTime(iso) {
@@ -216,23 +218,7 @@ export default function Scanner() {
 
   const processScanRef = useRef(null);
 
-  useEffect(() => {
-    const loadChapters = async () => {
-      setLoadingLists(true);
-      try {
-        const res = await fetch(`${API_ROOT}/chapters/?is_active=true`);
-        if (!res.ok) throw new Error(`Failed to load chapters (${res.status})`);
-        const data = await res.json();
-        setChapters(Array.isArray(data) ? data : data.results || []);
-      } catch (err) {
-        console.error(err);
-        setError("Failed to load chapters. Is the backend running?");
-      } finally {
-        setLoadingLists(false);
-      }
-    };
-    loadChapters();
-  }, []);
+  const autoChapterRef = useRef(false);
 
   const selectChapter = async (chapter) => {
     await stopCamera();
@@ -243,7 +229,12 @@ export default function Scanner() {
     setLoadingSessions(true);
     setStep("session");
     try {
-      const res = await fetch(`${API_ROOT}/chapters/${chapter.id}/sessions/`);
+      const res = await apiFetch(`${API_ROOT}/chapters/${chapter.id}/sessions/`);
+      if (res.status === 404) {
+        setSessions([]);
+        setError("Not found.");
+        return;
+      }
       if (!res.ok) throw new Error(`Failed to load sessions (${res.status})`);
       const data = await res.json();
       const list = Array.isArray(data) ? data : data.results || [];
@@ -256,6 +247,34 @@ export default function Scanner() {
       setLoadingSessions(false);
     }
   };
+
+  useEffect(() => {
+    const loadChapters = async () => {
+      setLoadingLists(true);
+      try {
+        const res = await apiFetch(`${API_ROOT}/chapters/?is_active=true`);
+        if (res.status === 404) {
+          setChapters([]);
+          setError("Not found.");
+          return;
+        }
+        if (!res.ok) throw new Error(`Failed to load chapters (${res.status})`);
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : data.results || [];
+        setChapters(list);
+        if (list.length === 1 && !autoChapterRef.current) {
+          autoChapterRef.current = true;
+          await selectChapter(list[0]);
+        }
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load chapters. Is the backend running?");
+      } finally {
+        setLoadingLists(false);
+      }
+    };
+    loadChapters();
+  }, []);
 
   const selectSession = async (session) => {
     await stopCamera();
@@ -299,7 +318,7 @@ export default function Scanner() {
       // Stop camera before API + result UI
       await stopCamera();
 
-      const response = await fetch(`${API_BASE_URL}scan/`, {
+      const response = await apiFetch(`${API_BASE_URL}scan/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -312,6 +331,11 @@ export default function Scanner() {
       });
 
       const data = await response.json().catch(() => ({}));
+
+      if (response.status === 404) {
+        setError("Not found.");
+        return;
+      }
 
       if (response.status === 400 || data.status === "INVALID") {
         setScanResult({
@@ -552,7 +576,10 @@ export default function Scanner() {
             </Link>
             <h1 className="text-2xl font-bold text-[#C5242A]">QR Scanner</h1>
           </div>
-          <PortalNav />
+          <div className="flex items-center gap-2">
+            <PortalNav />
+            <AccountMenu />
+          </div>
         </div>
       </header>
 
@@ -590,7 +617,7 @@ export default function Scanner() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                {selectedChapter && (
+                {selectedChapter && chapters.length > 1 && (
                   <button
                     type="button"
                     onClick={changeChapter}
@@ -629,7 +656,7 @@ export default function Scanner() {
               <p className="text-sm text-slate-500">Loading chapters...</p>
             ) : chapters.length === 0 ? (
               <p className="text-sm text-slate-400">
-                No active chapters. Create one under Chapters first.
+                No active chapters.
               </p>
             ) : (
               <ul className="space-y-2">

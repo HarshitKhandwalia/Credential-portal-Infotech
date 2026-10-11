@@ -3,7 +3,9 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import logo from "./assets/logoEI.jpeg";
 import { API_ROOT } from "./config";
+import { apiFetch } from "./api";
 import PortalNav from "./PortalNav";
+import AccountMenu from "./AccountMenu";
 
 function PeopleTable({ title, people, emptyLabel }) {
   return (
@@ -52,12 +54,13 @@ export default function PaymentReport() {
   const [selectedCycle, setSelectedCycle] = useState(null);
   const [chapterName, setChapterName] = useState("");
   const [error, setError] = useState("");
+  const [notFound, setNotFound] = useState(false);
 
   // Fetch available cycles for dropdown
   const loadCycles = async () => {
     try {
       setError("");
-      const res = await fetch(`${API_ROOT}/cycles-dropdown/`);
+      const res = await apiFetch(`${API_ROOT}/cycles-dropdown/`);
       if (!res.ok) throw new Error("Failed to load cycles");
       const data = await res.json();
       const cycleList = data.cycles || [];
@@ -85,11 +88,17 @@ export default function PaymentReport() {
 
     setLoading(true);
     setError("");
+    setNotFound(false);
     try {
       const params = new URLSearchParams({ cycle_start: cycleStart });
-      const res = await fetch(
+      const res = await apiFetch(
         `${API_ROOT}/chapters/${chapterId}/payment-report/?${params}`
       );
+      if (res.status === 404) {
+        setReport(null);
+        setNotFound(true);
+        return;
+      }
       if (!res.ok) {
         let detail = "Failed to load payment report.";
         try {
@@ -131,6 +140,7 @@ export default function PaymentReport() {
             <img src={logo} alt="Enterprise-Infotech Logo" className="h-14 w-auto object-contain" />
             <PortalNav />
           </div>
+          <AccountMenu />
         </div>
       </header>
 
@@ -173,6 +183,10 @@ export default function PaymentReport() {
           {loading ? (
             <div className="rounded-xl border border-slate-200 bg-white py-16 text-center text-sm text-slate-500">
               Loading payment report...
+            </div>
+          ) : notFound ? (
+            <div className="rounded-xl border border-dashed border-slate-200 bg-white py-16 text-center text-sm text-slate-400">
+              Not found.
             </div>
           ) : error ? (
             <div className="rounded-xl border border-red-200 bg-red-50 py-16 text-center text-sm text-red-600">

@@ -3,7 +3,10 @@ import { Link } from "react-router-dom";
 import { Plus, Edit, Trash2, Archive, X, BookOpen } from "lucide-react";
 import logo from "./assets/BNI-LOGO.jpeg";
 import { API_ROOT } from "./config";
+import { apiFetch } from "./api";
+import { useAuth } from "./auth";
 import PortalNav from "./PortalNav";
+import AccountMenu from "./AccountMenu";
 import { toast } from "./toast";
 
 function ChapterModal({ chapter, onClose, onSave }) {
@@ -137,6 +140,7 @@ function formatDate(iso) {
 }
 
 export default function Chapters() {
+  const { isSuperadmin } = useAuth();
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -145,7 +149,7 @@ export default function Chapters() {
   const fetchChapters = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_ROOT}/chapters/`);
+      const res = await apiFetch(`${API_ROOT}/chapters/`);
       if (!res.ok) throw new Error(`Failed to load chapters (${res.status})`);
       const data = await res.json();
       setChapters(Array.isArray(data) ? data : data.results || []);
@@ -162,7 +166,7 @@ export default function Chapters() {
   }, []);
 
   const handleCreate = async (payload) => {
-    const res = await fetch(`${API_ROOT}/chapters/`, {
+    const res = await apiFetch(`${API_ROOT}/chapters/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...payload, is_active: true }),
@@ -176,7 +180,7 @@ export default function Chapters() {
   };
 
   const handleUpdate = async (payload) => {
-    const res = await fetch(`${API_ROOT}/chapters/${editing.id}/`, {
+    const res = await apiFetch(`${API_ROOT}/chapters/${editing.id}/`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -194,7 +198,7 @@ export default function Chapters() {
       return;
     }
     try {
-      const res = await fetch(`${API_ROOT}/chapters/${chapter.id}/`, {
+      const res = await apiFetch(`${API_ROOT}/chapters/${chapter.id}/`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ is_active: false }),
@@ -212,7 +216,7 @@ export default function Chapters() {
       return;
     }
     try {
-      const res = await fetch(`${API_ROOT}/chapters/${chapter.id}/`, {
+      const res = await apiFetch(`${API_ROOT}/chapters/${chapter.id}/`, {
         method: "DELETE",
       });
       if (!res.ok && res.status !== 204) throw new Error(`Delete failed (${res.status})`);
@@ -231,13 +235,18 @@ export default function Chapters() {
             <img src={logo} alt="BNI Logo" className="-my-3 h-16 sm:h-20 w-auto object-contain" />
             <PortalNav />
           </div>
-          <button
-            onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 rounded-lg bg-[#C5242A] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#A81D23]"
-          >
-            <Plus size={16} />
-            New Chapter
-          </button>
+          <div className="flex items-center gap-2">
+            {isSuperadmin && (
+              <button
+                onClick={() => setShowCreate(true)}
+                className="flex items-center gap-2 rounded-lg bg-[#C5242A] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#A81D23]"
+              >
+                <Plus size={16} />
+                New Chapter
+              </button>
+            )}
+            <AccountMenu />
+          </div>
         </div>
       </header>
 
@@ -255,7 +264,7 @@ export default function Chapters() {
           </div>
         ) : chapters.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-200 bg-white py-16 text-center text-sm text-slate-400">
-            No chapters yet. Create one to get started.
+            No chapters yet.{isSuperadmin ? " Create one to get started." : ""}
           </div>
         ) : (
           <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -310,6 +319,8 @@ export default function Chapters() {
                         >
                           View
                         </Link>
+                        {isSuperadmin && (
+                          <>
                         <button
                           onClick={() => setEditing(chapter)}
                           className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
@@ -333,6 +344,8 @@ export default function Chapters() {
                         >
                           <Trash2 size={16} />
                         </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

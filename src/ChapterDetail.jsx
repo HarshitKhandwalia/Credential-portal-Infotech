@@ -3,7 +3,9 @@ import { useNavigate, Link, useParams } from "react-router-dom";
 import { Plus, ArrowLeft, X, Calendar, Repeat } from "lucide-react";
 import logo from "./assets/BNI-LOGO.jpeg";
 import { API_ROOT } from "./config";
+import { apiFetch } from "./api";
 import PortalNav from "./PortalNav";
+import AccountMenu from "./AccountMenu";
 import { toast } from "./toast";
 
 function localInputToIso(localValue) {
@@ -347,9 +349,14 @@ export default function ChapterDetail() {
     setLoading(true);
     try {
       const [chapterRes, sessionsRes] = await Promise.all([
-        fetch(`${API_ROOT}/chapters/${chapterId}/`),
-        fetch(`${API_ROOT}/chapters/${chapterId}/sessions/`),
+        apiFetch(`${API_ROOT}/chapters/${chapterId}/`),
+        apiFetch(`${API_ROOT}/chapters/${chapterId}/sessions/`),
       ]);
+      if (chapterRes.status === 404) {
+        setChapter(null);
+        setSessions([]);
+        return;
+      }
       if (!chapterRes.ok) throw new Error(`Chapter ${chapterRes.status}`);
       if (!sessionsRes.ok) throw new Error(`Sessions ${sessionsRes.status}`);
       const chapterData = await chapterRes.json();
@@ -369,7 +376,7 @@ export default function ChapterDetail() {
   }, [chapterId]);
 
   const handleCreateSession = async (payload) => {
-    const res = await fetch(`${API_ROOT}/chapters/${chapterId}/sessions/`, {
+    const res = await apiFetch(`${API_ROOT}/chapters/${chapterId}/sessions/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -383,7 +390,7 @@ export default function ChapterDetail() {
   };
 
   const handleCreateRecurring = async (payload) => {
-    const res = await fetch(`${API_ROOT}/chapters/${chapterId}/sessions/recurring/`, {
+    const res = await apiFetch(`${API_ROOT}/chapters/${chapterId}/sessions/recurring/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -429,6 +436,7 @@ export default function ChapterDetail() {
               <Repeat size={16} />
               Recurring
             </button>
+            <AccountMenu />
           </div>
         </div>
       </header>

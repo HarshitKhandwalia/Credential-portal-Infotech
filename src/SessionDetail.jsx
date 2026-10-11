@@ -3,7 +3,9 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Trash2, RefreshCw, Download } from "lucide-react";
 import logo from "./assets/logoEI.jpeg";
 import { API_ROOT } from "./config";
+import { apiFetch } from "./api";
 import PortalNav from "./PortalNav";
+import AccountMenu from "./AccountMenu";
 import { toast } from "./toast";
 
 function toLocalInputValue(iso) {
@@ -252,10 +254,15 @@ export default function SessionDetail() {
     setLoading(true);
     try {
       const [sessionRes, reportRes, credentialsRes] = await Promise.all([
-        fetch(`${API_ROOT}/sessions/${sessionId}/`),
-        fetch(`${API_ROOT}/sessions/${sessionId}/report/`),
-        fetch(`${API_ROOT}/credentials/`),
+        apiFetch(`${API_ROOT}/sessions/${sessionId}/`),
+        apiFetch(`${API_ROOT}/sessions/${sessionId}/report/`),
+        apiFetch(`${API_ROOT}/credentials/`),
       ]);
+      if (sessionRes.status === 404) {
+        setSession(null);
+        setReport(null);
+        return;
+      }
       if (!sessionRes.ok) throw new Error(`Session ${sessionRes.status}`);
       const sessionData = await sessionRes.json();
       setSession(sessionData);
@@ -317,7 +324,7 @@ export default function SessionDetail() {
     setSaving(true);
     setFormError("");
     try {
-      const res = await fetch(`${API_ROOT}/sessions/${sessionId}/`, {
+      const res = await apiFetch(`${API_ROOT}/sessions/${sessionId}/`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -343,7 +350,7 @@ export default function SessionDetail() {
   const handleDelete = async () => {
     if (!window.confirm("Delete this session permanently?")) return;
     try {
-      const res = await fetch(`${API_ROOT}/sessions/${sessionId}/`, {
+      const res = await apiFetch(`${API_ROOT}/sessions/${sessionId}/`, {
         method: "DELETE",
       });
       if (!res.ok && res.status !== 204) throw new Error(`Delete failed (${res.status})`);
@@ -386,6 +393,7 @@ export default function SessionDetail() {
               <Trash2 size={14} />
               Delete
             </button>
+            <AccountMenu />
           </div>
         </div>
       </header>
