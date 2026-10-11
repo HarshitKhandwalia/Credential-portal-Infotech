@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link, useParams } from "react-router-dom";
 import { Plus, ArrowLeft, X, Calendar, Repeat } from "lucide-react";
-import logo from "./assets/logoEI.jpeg";
+import logo from "./assets/BNI-LOGO.jpeg";
 import { API_ROOT } from "./config";
+import { apiFetch } from "./api";
 import PortalNav from "./PortalNav";
+import AccountMenu from "./AccountMenu";
 import { toast } from "./toast";
 
 function localInputToIso(localValue) {
@@ -128,7 +130,7 @@ function SessionModal({ mode, onClose, onSave, onSaveRecurring, onDone }) {
           className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="relative bg-[#2D5A5D] px-6 py-5 text-white">
+          <div className="relative bg-[#C5242A] px-6 py-5 text-white">
             <button
               onClick={onClose}
               className="absolute right-4 top-4 rounded-full p-1 text-white/80 transition hover:bg-white/10 hover:text-white"
@@ -180,7 +182,7 @@ function SessionModal({ mode, onClose, onSave, onSaveRecurring, onDone }) {
               <button
                 type="button"
                 onClick={handleDone}
-                className="rounded-lg bg-[#2D5A5D] px-4 py-2 text-sm font-semibold text-white hover:bg-[#234749]"
+                className="rounded-lg bg-[#C5242A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#A81D23]"
               >
                 Done
               </button>
@@ -200,7 +202,7 @@ function SessionModal({ mode, onClose, onSave, onSaveRecurring, onDone }) {
         className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative bg-[#2D5A5D] px-6 py-5 text-white">
+        <div className="relative bg-[#C5242A] px-6 py-5 text-white">
           <button
             onClick={onClose}
             className="absolute right-4 top-4 rounded-full p-1 text-white/80 transition hover:bg-white/10 hover:text-white"
@@ -248,7 +250,7 @@ function SessionModal({ mode, onClose, onSave, onSaveRecurring, onDone }) {
               onChange={(e) => setTitle(e.target.value)}
               placeholder={isRecurring ? "Yoga Class" : "Week 1 (optional)"}
               required={isRecurring}
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#C5242A] focus:bg-white focus:ring-2 focus:ring-[#C5242A]/20"
             />
           </div>
 
@@ -263,7 +265,7 @@ function SessionModal({ mode, onClose, onSave, onSaveRecurring, onDone }) {
                 value={startsAt}
                 onChange={(e) => setStartsAt(e.target.value)}
                 required
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#C5242A] focus:bg-white focus:ring-2 focus:ring-[#C5242A]/20"
               />
             </div>
             <div>
@@ -276,7 +278,7 @@ function SessionModal({ mode, onClose, onSave, onSaveRecurring, onDone }) {
                 value={endsAt}
                 onChange={(e) => setEndsAt(e.target.value)}
                 required
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#C5242A] focus:bg-white focus:ring-2 focus:ring-[#C5242A]/20"
               />
             </div>
           </div>
@@ -291,7 +293,7 @@ function SessionModal({ mode, onClose, onSave, onSaveRecurring, onDone }) {
                 value={recurrenceEndDate}
                 onChange={(e) => setRecurrenceEndDate(e.target.value)}
                 required
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#C5242A] focus:bg-white focus:ring-2 focus:ring-[#C5242A]/20"
               />
             </div>
           ) : (
@@ -300,7 +302,7 @@ function SessionModal({ mode, onClose, onSave, onSaveRecurring, onDone }) {
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#C5242A] focus:bg-white focus:ring-2 focus:ring-[#C5242A]/20"
               >
                 <option value="scheduled">Scheduled</option>
                 <option value="completed">Completed</option>
@@ -320,7 +322,7 @@ function SessionModal({ mode, onClose, onSave, onSaveRecurring, onDone }) {
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-lg bg-[#2D5A5D] px-4 py-2 text-sm font-semibold text-white hover:bg-[#234749] disabled:opacity-50"
+              className="rounded-lg bg-[#C5242A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#A81D23] disabled:opacity-50"
             >
               {submitting
                 ? "Creating..."
@@ -347,9 +349,14 @@ export default function ChapterDetail() {
     setLoading(true);
     try {
       const [chapterRes, sessionsRes] = await Promise.all([
-        fetch(`${API_ROOT}/chapters/${chapterId}/`),
-        fetch(`${API_ROOT}/chapters/${chapterId}/sessions/`),
+        apiFetch(`${API_ROOT}/chapters/${chapterId}/`),
+        apiFetch(`${API_ROOT}/chapters/${chapterId}/sessions/`),
       ]);
+      if (chapterRes.status === 404) {
+        setChapter(null);
+        setSessions([]);
+        return;
+      }
       if (!chapterRes.ok) throw new Error(`Chapter ${chapterRes.status}`);
       if (!sessionsRes.ok) throw new Error(`Sessions ${sessionsRes.status}`);
       const chapterData = await chapterRes.json();
@@ -369,7 +376,7 @@ export default function ChapterDetail() {
   }, [chapterId]);
 
   const handleCreateSession = async (payload) => {
-    const res = await fetch(`${API_ROOT}/chapters/${chapterId}/sessions/`, {
+    const res = await apiFetch(`${API_ROOT}/chapters/${chapterId}/sessions/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -383,7 +390,7 @@ export default function ChapterDetail() {
   };
 
   const handleCreateRecurring = async (payload) => {
-    const res = await fetch(`${API_ROOT}/chapters/${chapterId}/sessions/recurring/`, {
+    const res = await apiFetch(`${API_ROOT}/chapters/${chapterId}/sessions/recurring/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -401,11 +408,11 @@ export default function ChapterDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-[#EEF4F4]">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-4">
+    <div className="min-h-screen bg-white">
+      <header className="border-b-4 border-[#C5242A] bg-white">
+        <div className="flex w-full flex-wrap items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
-            <img src={logo} alt="Enterprise-Infotech Logo" className="h-14 w-auto object-contain" />
+            <img src={logo} alt="BNI Logo" className="-my-3 h-16 sm:h-20 w-auto object-contain" />
             <PortalNav />
           </div>
            <div className="flex items-center gap-2">
@@ -417,26 +424,27 @@ export default function ChapterDetail() {
             </button>
             <button
               onClick={() => setCreateMode("one-off")}
-              className="flex items-center gap-2 rounded-lg bg-[#2D5A5D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#234749]"
+              className="flex items-center gap-2 rounded-lg bg-[#C5242A] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#A81D23]"
             >
               <Plus size={16} />
               New Session
             </button>
             <button
               onClick={() => setCreateMode("recurring")}
-              className="flex items-center gap-2 rounded-lg border border-[#2D5A5D] bg-white px-4 py-2 text-sm font-semibold text-[#2D5A5D] transition hover:bg-[#EEF4F4]"
+              className="flex items-center gap-2 rounded-lg border border-[#C5242A] bg-white px-4 py-2 text-sm font-semibold text-[#C5242A] transition hover:bg-red-50"
             >
               <Repeat size={16} />
               Recurring
             </button>
+            <AccountMenu />
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-6 py-8">
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <Link
           to="/chapters"
-          className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-[#2D5A5D]"
+          className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-[#C5242A]"
         >
           <ArrowLeft size={16} />
           Back to Chapters
@@ -454,7 +462,7 @@ export default function ChapterDetail() {
           <>
             <div className="mb-6">
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-2xl font-bold text-slate-800">{chapter.name}</h1>
+                <h1 className="text-2xl font-bold text-[#C5242A]">{chapter.name}</h1>
                 <span
                   className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                     chapter.is_active
@@ -470,7 +478,7 @@ export default function ChapterDetail() {
               )}
             </div>
 
-            <h2 className="mb-3 text-lg font-semibold text-slate-800">Sessions</h2>
+            <h2 className="mb-3 text-lg font-semibold text-[#9B1C21]">Sessions</h2>
 
             {sessions.length === 0 ? (
               <div className="rounded-xl border border-dashed border-slate-200 bg-white py-16 text-center text-sm text-slate-400">
@@ -480,7 +488,7 @@ export default function ChapterDetail() {
               <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse text-left text-sm text-slate-700">
-                    <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    <thead className="border-b border-red-100 bg-red-50 text-xs font-semibold uppercase tracking-wider text-red-900/70">
                       <tr>
                         <th className="px-6 py-4">Title</th>
                         <th className="px-6 py-4">Starts</th>
@@ -490,11 +498,11 @@ export default function ChapterDetail() {
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {sessions.map((session) => (
-                        <tr key={session.id} className="hover:bg-slate-50/80 transition-colors">
+                        <tr key={session.id} className="hover:bg-red-50/50 transition-colors">
                           <td className="px-6 py-4 font-medium">
                             <Link
                               to={`/sessions/${session.id}`}
-                              className="text-[#2D5A5D] hover:underline"
+                              className="text-[#C5242A] hover:underline"
                             >
                               {session.title || `Session #${session.id}`}
                             </Link>

@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { useAuth } from "./auth";
 
 const links = [
   { to: "/", label: "Users", end: true },
@@ -7,9 +8,14 @@ const links = [
 ];
 
 export default function PortalNav() {
+  const { isSuperadmin } = useAuth();
+  const items = isSuperadmin
+    ? [...links, { to: "/staff", label: "Admins" }]
+    : links;
+
   return (
     <nav className="flex items-center gap-1">
-      {links.map(({ to, label, end }) => (
+      {items.map(({ to, label, end }) => (
         <NavLink
           key={to}
           to={to}
@@ -17,8 +23,8 @@ export default function PortalNav() {
           className={({ isActive }) =>
             `rounded-lg px-3 py-1.5 text-sm font-medium transition ${
               isActive
-                ? "bg-[#2D5A5D]/10 text-[#2D5A5D]"
-                : "text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+                ? "bg-[#C5242A]/10 text-[#C5242A]"
+                : "text-slate-600 hover:bg-red-50 hover:text-[#C5242A]"
             }`
           }
         >

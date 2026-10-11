@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Edit, Trash2, Archive, X, BookOpen } from "lucide-react";
-import logo from "./assets/logoEI.jpeg";
+import logo from "./assets/BNI-LOGO.jpeg";
 import { API_ROOT } from "./config";
+import { apiFetch } from "./api";
+import { useAuth } from "./auth";
 import PortalNav from "./PortalNav";
+import AccountMenu from "./AccountMenu";
 import { toast } from "./toast";
 
 function ChapterModal({ chapter, onClose, onSave }) {
@@ -41,7 +44,7 @@ function ChapterModal({ chapter, onClose, onSave }) {
         className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative bg-[#2D5A5D] px-6 py-5 text-white">
+        <div className="relative bg-[#C5242A] px-6 py-5 text-white">
           <button
             onClick={onClose}
             className="absolute right-4 top-4 rounded-full p-1 text-white/80 transition hover:bg-white/10 hover:text-white"
@@ -76,7 +79,7 @@ function ChapterModal({ chapter, onClose, onSave }) {
               onChange={(e) => setName(e.target.value)}
               placeholder="Alpha Chapter"
               required
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#C5242A] focus:bg-white focus:ring-2 focus:ring-[#C5242A]/20"
             />
           </div>
 
@@ -89,7 +92,7 @@ function ChapterModal({ chapter, onClose, onSave }) {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Optional"
               rows={3}
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#C5242A] focus:bg-white focus:ring-2 focus:ring-[#C5242A]/20"
             />
           </div>
 
@@ -99,7 +102,7 @@ function ChapterModal({ chapter, onClose, onSave }) {
                 type="checkbox"
                 checked={isActive}
                 onChange={(e) => setIsActive(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-[#2D5A5D] focus:ring-[#2D5A5D]"
+                className="h-4 w-4 rounded border-slate-300 text-[#C5242A] focus:ring-[#C5242A]"
               />
               Active
             </label>
@@ -116,7 +119,7 @@ function ChapterModal({ chapter, onClose, onSave }) {
             <button
               type="submit"
               disabled={!name.trim() || submitting}
-              className="rounded-lg bg-[#2D5A5D] px-4 py-2 text-sm font-semibold text-white hover:bg-[#234749] disabled:opacity-50"
+              className="rounded-lg bg-[#C5242A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#A81D23] disabled:opacity-50"
             >
               {submitting ? "Saving..." : isEdit ? "Save Changes" : "Create Chapter"}
             </button>
@@ -137,6 +140,7 @@ function formatDate(iso) {
 }
 
 export default function Chapters() {
+  const { isSuperadmin } = useAuth();
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -145,7 +149,7 @@ export default function Chapters() {
   const fetchChapters = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_ROOT}/chapters/`);
+      const res = await apiFetch(`${API_ROOT}/chapters/`);
       if (!res.ok) throw new Error(`Failed to load chapters (${res.status})`);
       const data = await res.json();
       setChapters(Array.isArray(data) ? data : data.results || []);
@@ -162,7 +166,7 @@ export default function Chapters() {
   }, []);
 
   const handleCreate = async (payload) => {
-    const res = await fetch(`${API_ROOT}/chapters/`, {
+    const res = await apiFetch(`${API_ROOT}/chapters/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...payload, is_active: true }),
@@ -176,7 +180,7 @@ export default function Chapters() {
   };
 
   const handleUpdate = async (payload) => {
-    const res = await fetch(`${API_ROOT}/chapters/${editing.id}/`, {
+    const res = await apiFetch(`${API_ROOT}/chapters/${editing.id}/`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -194,7 +198,7 @@ export default function Chapters() {
       return;
     }
     try {
-      const res = await fetch(`${API_ROOT}/chapters/${chapter.id}/`, {
+      const res = await apiFetch(`${API_ROOT}/chapters/${chapter.id}/`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ is_active: false }),
@@ -212,7 +216,7 @@ export default function Chapters() {
       return;
     }
     try {
-      const res = await fetch(`${API_ROOT}/chapters/${chapter.id}/`, {
+      const res = await apiFetch(`${API_ROOT}/chapters/${chapter.id}/`, {
         method: "DELETE",
       });
       if (!res.ok && res.status !== 204) throw new Error(`Delete failed (${res.status})`);
@@ -224,26 +228,31 @@ export default function Chapters() {
   };
 
   return (
-    <div className="min-h-screen bg-[#EEF4F4]">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-4">
+    <div className="min-h-screen bg-white">
+      <header className="border-b-4 border-[#C5242A] bg-white">
+        <div className="flex w-full flex-wrap items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
-            <img src={logo} alt="Enterprise-Infotech Logo" className="h-14 w-auto object-contain" />
+            <img src={logo} alt="BNI Logo" className="-my-3 h-16 sm:h-20 w-auto object-contain" />
             <PortalNav />
           </div>
-          <button
-            onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 rounded-lg bg-[#2D5A5D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#234749]"
-          >
-            <Plus size={16} />
-            New Chapter
-          </button>
+          <div className="flex items-center gap-2">
+            {isSuperadmin && (
+              <button
+                onClick={() => setShowCreate(true)}
+                className="flex items-center gap-2 rounded-lg bg-[#C5242A] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#A81D23]"
+              >
+                <Plus size={16} />
+                New Chapter
+              </button>
+            )}
+            <AccountMenu />
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-6 py-8">
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-800">Chapters</h1>
+          <h1 className="text-2xl font-bold text-[#C5242A]">Chapters</h1>
           <p className="mt-1 text-sm text-slate-500">
             Classes and cohorts. Each credential belongs to one chapter.
           </p>
@@ -255,87 +264,94 @@ export default function Chapters() {
           </div>
         ) : chapters.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-200 bg-white py-16 text-center text-sm text-slate-400">
-            No chapters yet. Create one to get started.
+            No chapters yet.{isSuperadmin ? " Create one to get started." : ""}
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left text-sm text-slate-700">
-                <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  <tr>
-                    <th className="px-6 py-4">Name</th>
-                    <th className="px-6 py-4">Description</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4">Created</th>
-                    <th className="px-6 py-4 text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {chapters.map((chapter) => (
-                    <tr key={chapter.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-6 py-4 font-medium text-slate-900">
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <table className="w-full table-fixed border-collapse text-left text-xs md:text-sm text-slate-700">
+              <thead className="border-b border-red-100 bg-red-50 text-xs font-semibold uppercase tracking-wider text-red-900/70">
+                <tr>
+                  <th className="w-[50%] md:w-[22%] rounded-tl-xl px-3 md:px-4 lg:px-6 py-4">Name</th>
+                  <th className="hidden md:table-cell md:w-[28%] px-3 md:px-4 lg:px-6 py-4">Description</th>
+                  <th className="w-[20%] md:w-[12%] px-3 md:px-4 lg:px-6 py-4">Status</th>
+                  <th className="hidden md:table-cell md:w-[20%] px-3 md:px-4 lg:px-6 py-4">Created</th>
+                  <th className="w-[30%] md:w-[18%] rounded-tr-xl px-3 md:px-4 lg:px-6 py-4 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {chapters.map((chapter) => (
+                  <tr key={chapter.id} className="hover:bg-red-50/50 transition-colors">
+                    <td className="px-3 md:px-4 lg:px-6 py-4 font-medium text-slate-900">
+                      <Link
+                        to={`/chapters/${chapter.id}`}
+                        className="text-[#C5242A] hover:underline [overflow-wrap:anywhere]"
+                      >
+                        {chapter.name}
+                      </Link>
+                      {/* Extra details for phones (hidden columns) */}
+                      <div className="mt-0.5 text-[11px] font-normal text-slate-500 md:hidden [overflow-wrap:anywhere]">
+                        {chapter.description || "—"}
+                        <div>{formatDate(chapter.created_at)}</div>
+                      </div>
+                    </td>
+                    <td className="hidden md:table-cell px-3 md:px-4 lg:px-6 py-4 text-slate-600 [overflow-wrap:anywhere]">
+                      {chapter.description || "—"}
+                    </td>
+                    <td className="px-3 md:px-4 lg:px-6 py-4">
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                          chapter.is_active
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {chapter.is_active ? "Active" : "Archived"}
+                      </span>
+                    </td>
+                    <td className="hidden md:table-cell px-3 md:px-4 lg:px-6 py-4 text-xs text-slate-500">
+                      {formatDate(chapter.created_at)}
+                    </td>
+                    <td className="px-2 md:px-4 lg:px-6 py-4">
+                      <div className="flex flex-wrap items-center justify-center gap-1">
                         <Link
                           to={`/chapters/${chapter.id}`}
-                          className="text-[#2D5A5D] hover:underline"
+                          className="rounded-lg px-2 py-1.5 text-xs font-medium text-[#C5242A] hover:bg-[#C5242A]/10"
                         >
-                          {chapter.name}
+                          View
                         </Link>
-                      </td>
-                      <td className="px-6 py-4 text-slate-600 max-w-xs truncate">
-                        {chapter.description || "—"}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                            chapter.is_active
-                              ? "bg-emerald-50 text-emerald-700"
-                              : "bg-slate-100 text-slate-500"
-                          }`}
+                        {isSuperadmin && (
+                          <>
+                        <button
+                          onClick={() => setEditing(chapter)}
+                          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                          title="Edit"
                         >
-                          {chapter.is_active ? "Active" : "Archived"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-xs text-slate-500 whitespace-nowrap">
-                        {formatDate(chapter.created_at)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-center gap-1">
-                          <Link
-                            to={`/chapters/${chapter.id}`}
-                            className="rounded-lg px-2 py-1.5 text-xs font-medium text-[#2D5A5D] hover:bg-[#2D5A5D]/10"
-                          >
-                            View
-                          </Link>
+                          <Edit size={16} />
+                        </button>
+                        {chapter.is_active && (
                           <button
-                            onClick={() => setEditing(chapter)}
-                            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                            title="Edit"
+                            onClick={() => handleArchive(chapter)}
+                            className="rounded-lg p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-600"
+                            title="Archive"
                           >
-                            <Edit size={16} />
+                            <Archive size={16} />
                           </button>
-                          {chapter.is_active && (
-                            <button
-                              onClick={() => handleArchive(chapter)}
-                              className="rounded-lg p-1.5 text-slate-400 hover:bg-amber-50 hover:text-amber-600"
-                              title="Archive"
-                            >
-                              <Archive size={16} />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDelete(chapter)}
-                            className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                            title="Delete"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        )}
+                        <button
+                          onClick={() => handleDelete(chapter)}
+                          className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                          title="Delete"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </main>

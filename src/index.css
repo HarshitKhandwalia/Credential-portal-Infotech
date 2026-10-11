@@ -47,9 +47,10 @@
   color: #1e293b;
 }
 
-.portal-phone-input:focus-within {
-  border-color: #2d5a5d;
-  box-shadow: 0 0 0 2px rgba(45, 90, 93, 0.2);
+.portal-phone-input:focus-within,
+.portal-phone-input--brand:focus-within {
+  border-color: #c5242a;
+  box-shadow: 0 0 0 2px rgba(197, 36, 42, 0.2);
 }
 
 .portal-phone-input--emerald:focus-within {
