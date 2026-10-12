@@ -14,11 +14,13 @@ import {
   MoreVertical,
   ChevronDown,
   ChevronUp,
+  Upload,
 } from "lucide-react";
 import logo from "./assets/logoEI.jpeg";
 import { API_BASE_URL, API_ROOT } from "./config";
 import PortalNav from "./PortalNav";
 import { toast } from "./toast";
+import { BulkUploadModal } from "./BulkUploadModal";
 
 // Send Invite Modal Component
 function SendInviteModal({ employee, onClose, onSend, lockContacts = false }) {
@@ -963,13 +965,14 @@ export default function EmployeePortal() {
   const [expandedUserIds, setExpandedUserIds] = useState([]);
   const [sendingChildKey, setSendingChildKey] = useState(null);
   const [deletingChildKey, setDeletingChildKey] = useState(null);
+  const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
   const [markPaidDialog, setMarkPaidDialog] = useState({
     isOpen: false,
     employee: null,
     loading: false,
   });
   const [currentCycle, setCurrentCycle] = useState(null);
-
+  
   const toggleExpandUser = (id) => {
     setExpandedUserIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
@@ -1541,13 +1544,23 @@ export default function EmployeePortal() {
               className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none focus:border-[#2D5A5D] focus:ring-2 focus:ring-[#2D5A5D]/20"
             />
           </div>
-          <button
-            onClick={() => setNewModalConfig({})}
-            className="flex items-center gap-2 rounded-lg bg-[#2D5A5D] px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white transition hover:bg-[#234749]"
-          >
-            <Plus size={16} />
-            <span>New Pass</span>
-          </button>
+          {/* Buttons Container */}
+<div className="flex gap-2">
+  <button
+    onClick={() => setShowBulkUploadModal(true)}
+    className="flex items-center gap-2 rounded-lg bg-[#2D5A5D] px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white transition hover:bg-[#234749]"
+  >
+    <Upload size={16} />
+    <span>Bulk Upload</span>
+  </button>
+  <button
+    onClick={() => setNewModalConfig({})}
+    className="flex items-center gap-2 rounded-lg bg-[#2D5A5D] px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white transition hover:bg-[#234749]"
+  >
+    <Plus size={16} />
+    <span>New Pass</span>
+  </button>
+</div>
         </div>
 
         {/* Mobile Search Bar */}
@@ -1921,6 +1934,18 @@ export default function EmployeePortal() {
           onClose={() => setNewModalConfig(null)}
           onAdd={handleAddEmployee}
         />
+      )}
+      
+
+      {showBulkUploadModal && (
+        <BulkUploadModal
+      chapters={chapters}
+      onClose={() => setShowBulkUploadModal(false)}
+      onSuccess={() => {
+      setShowBulkUploadModal(false);
+      fetchEmployees(); // Refresh the employee list
+        }}
+     />
       )}
     </div>
   );
