@@ -38,6 +38,14 @@ function statusBadge(status) {
   return styles[status] || "bg-slate-100 text-slate-600";
 }
 
+function displayStatus(session) {
+  const stored = session?.status || "scheduled";
+  if (stored === "cancelled" || stored === "completed") return stored;
+  const end = session?.ends_at ? new Date(session.ends_at) : null;
+  if (end && !Number.isNaN(end.getTime()) && end <= new Date()) return "completed";
+  return stored;
+}
+
 function SessionModal({ mode, onClose, onSave, onSaveRecurring, onDone }) {
   const isRecurring = mode === "recurring";
   const [title, setTitle] = useState("");
@@ -167,9 +175,9 @@ function SessionModal({ mode, onClose, onSave, onSaveRecurring, onDone }) {
                       {formatDateTime(session.starts_at)} – {formatDateTime(session.ends_at)}
                       {session.status ? (
                         <span
-                          className={`ml-2 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${statusBadge(session.status)}`}
+                          className={`ml-2 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${statusBadge(displayStatus(session))}`}
                         >
-                          {session.status}
+                          {displayStatus(session)}
                         </span>
                       ) : null}
                     </div>
@@ -515,9 +523,9 @@ export default function ChapterDetail() {
                           </td>
                           <td className="px-6 py-4">
                             <span
-                              className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${statusBadge(session.status)}`}
+                              className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${statusBadge(displayStatus(session))}`}
                             >
-                              {session.status}
+                              {displayStatus(session)}
                             </span>
                           </td>
                         </tr>
