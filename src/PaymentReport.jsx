@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import logo from "./assets/logoEI.jpeg";
+import logo from "./assets/BNI-LOGO.jpeg";
 import { API_ROOT } from "./config";
 import { apiFetch } from "./api";
 import PortalNav from "./PortalNav";
@@ -132,12 +132,12 @@ export default function PaymentReport() {
   }, [selectedCycle, chapterId]);
 
   return (
-    <div className="min-h-screen bg-[#EEF4F4]">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-4">
+      <header className="border-b-4 border-[#C5242A] bg-white">
+        <div className="flex w-full flex-wrap items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
-            <img src={logo} alt="Enterprise-Infotech Logo" className="h-14 w-auto object-contain" />
+            <img src={logo} alt="BNI Logo" className="-my-3 h-16 sm:h-20 w-auto object-contain" />
             <PortalNav />
           </div>
           <AccountMenu />
@@ -145,10 +145,10 @@ export default function PaymentReport() {
       </header>
 
       {/* Main Content */}
-      <main className="mx-auto max-w-7xl px-6 py-8">
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <Link
           to={`/chapters/${chapterId}`}
-          className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-[#2D5A5D]"
+          className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-[#C5242A]"
         >
           <ArrowLeft size={16} />
           Back to {chapterName || "Chapter"}
@@ -158,7 +158,7 @@ export default function PaymentReport() {
           {/* Title and Cycle Selector */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-slate-800">Payment Report</h1>
+              <h1 className="text-2xl font-bold text-[#C5242A]">Payment Report</h1>
               <p className="mt-1 text-sm text-slate-500">{chapterName}</p>
             </div>
 
@@ -168,7 +168,7 @@ export default function PaymentReport() {
               <select
                 value={selectedCycle || ""}
                 onChange={(e) => setSelectedCycle(e.target.value)}
-                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:border-[#2D5A5D] focus:ring-2 focus:ring-[#2D5A5D]/20"
+                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:border-[#C5242A] focus:ring-2 focus:ring-[#C5242A]/20"
               >
                 {cycles.map((cycle) => (
                   <option key={cycle.cycle_start} value={cycle.cycle_start}>

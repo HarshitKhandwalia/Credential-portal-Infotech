@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Trash2, RefreshCw, Download } from "lucide-react";
-import logo from "./assets/logoEI.jpeg";
+import { ArrowLeft, Trash2, Download } from "lucide-react";
+import logo from "./assets/BNI-LOGO.jpeg";
 import { API_ROOT } from "./config";
 import { apiFetch } from "./api";
 import PortalNav from "./PortalNav";
@@ -362,11 +362,11 @@ export default function SessionDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-[#EEF4F4]">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-4">
+    <div className="min-h-screen bg-white">
+      <header className="border-b-4 border-[#C5242A] bg-white">
+        <div className="flex w-full flex-wrap items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
-            <img src={logo} alt="Enterprise-Infotech Logo" className="h-14 w-auto object-contain" />
+            <img src={logo} alt="BNI Logo" className="-my-3 h-16 sm:h-20 w-auto object-contain" />
             <PortalNav />
           </div>
           <div className="flex items-center gap-2">
@@ -380,13 +380,6 @@ export default function SessionDetail() {
               Download Report
             </button>
             <button
-              onClick={load}
-              className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-            >
-              <RefreshCw size={14} />
-              Refresh
-            </button>
-            <button
               onClick={handleDelete}
               className="flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
             >
@@ -398,11 +391,11 @@ export default function SessionDetail() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-6 py-8">
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {session?.chapter && (
           <Link
             to={`/chapters/${session.chapter}`}
-            className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-[#2D5A5D]"
+            className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-[#C5242A]"
           >
             <ArrowLeft size={16} />
             Back to {session.chapter_name || "Chapter"}
@@ -420,7 +413,7 @@ export default function SessionDetail() {
         ) : (
           <div className="space-y-8">
             <div>
-              <h1 className="text-2xl font-bold text-slate-800">
+              <h1 className="text-2xl font-bold text-[#C5242A]">
                 {session.title || `Session #${session.id}`}
               </h1>
               <p className="mt-1 text-sm text-slate-500">
@@ -445,7 +438,7 @@ export default function SessionDetail() {
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full max-w-md rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+                  className="w-full max-w-md rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#C5242A] focus:bg-white focus:ring-2 focus:ring-[#C5242A]/20"
                 />
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 max-w-2xl">
@@ -456,7 +449,7 @@ export default function SessionDetail() {
                     value={startsAt}
                     onChange={(e) => setStartsAt(e.target.value)}
                     required
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#C5242A] focus:bg-white focus:ring-2 focus:ring-[#C5242A]/20"
                   />
                 </div>
                 <div>
@@ -466,7 +459,7 @@ export default function SessionDetail() {
                     value={endsAt}
                     onChange={(e) => setEndsAt(e.target.value)}
                     required
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#C5242A] focus:bg-white focus:ring-2 focus:ring-[#C5242A]/20"
                   />
                 </div>
               </div>
@@ -475,7 +468,7 @@ export default function SessionDetail() {
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#C5242A] focus:bg-white focus:ring-2 focus:ring-[#C5242A]/20"
                 >
                   <option value="scheduled">Scheduled</option>
                   <option value="completed">Completed</option>
@@ -485,7 +478,7 @@ export default function SessionDetail() {
               <button
                 type="submit"
                 disabled={saving}
-                className="rounded-lg bg-[#2D5A5D] px-4 py-2 text-sm font-semibold text-white hover:bg-[#234749] disabled:opacity-50"
+                className="rounded-lg bg-[#C5242A] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#A81D23] disabled:opacity-50"
               >
                 {saving ? "Saving..." : "Save Changes"}
               </button>
