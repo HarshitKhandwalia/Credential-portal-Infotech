@@ -32,6 +32,9 @@ function getQrboxSize() {
   return Math.max(180, Math.min(250, Math.floor(width * 0.7)));
 }
 
+const SUCCESS_RETURN_SECONDS = 5;
+const SAME_CODE_COOLDOWN_MS = 4000;
+
 function pickBackCameraId(devices) {
   if (!devices?.length) return null;
   const back = devices.find((d) =>
@@ -58,8 +61,14 @@ export default function Scanner() {
   const [cameras, setCameras] = useState([]);
   const [activeCameraId, setActiveCameraId] = useState(null);
 
+  const [returnIn, setReturnIn] = useState(SUCCESS_RETURN_SECONDS);
+
   const scannerRef = useRef(null);
   const processingRef = useRef(false);
+  const recentCredentialRef = useRef("");
+  const ignoreSameUntilRef = useRef(0);
+  const resettingRef = useRef(false);
+  const handleResetRef = useRef(null);
   const runningRef = useRef(false);
   const stoppingRef = useRef(false);
   const startingRef = useRef(false);
@@ -304,6 +313,13 @@ export default function Scanner() {
 
   const processScan = async (credential) => {
     if (processingRef.current) return;
+    if (
+      credential === recentCredentialRef.current &&
+      Date.now() < ignoreSameUntilRef.current
+    ) {
+      return;
+    }
+    recentCredentialRef.current = credential;
     const session = selectedSessionRef.current;
     if (!session?.id) {
       setError("Select a session before scanning.");
@@ -382,11 +398,38 @@ export default function Scanner() {
   }, [step, scanResult, selectedSession?.id, startCamera, stopCamera]);
 
   const handleReset = async () => {
-    await stopCamera();
-    setScanResult(null);
-    setError(null);
-    processingRef.current = false;
+    if (resettingRef.current) return;
+    resettingRef.current = true;
+    try {
+      if (scanResult?.status === "SUCCESS") {
+        ignoreSameUntilRef.current = Date.now() + SAME_CODE_COOLDOWN_MS;
+      }
+      await stopCamera();
+      setScanResult(null);
+      setError(null);
+      processingRef.current = false;
+    } finally {
+      resettingRef.current = false;
+    }
   };
+  handleResetRef.current = handleReset;
+
+  useEffect(() => {
+    if (scanResult?.status !== "SUCCESS") return;
+    setReturnIn(SUCCESS_RETURN_SECONDS);
+    const started = Date.now();
+    const id = window.setInterval(() => {
+      const left =
+        SUCCESS_RETURN_SECONDS - Math.floor((Date.now() - started) / 1000);
+      if (left <= 0) {
+        window.clearInterval(id);
+        handleResetRef.current?.();
+        return;
+      }
+      setReturnIn(left);
+    }, 200);
+    return () => window.clearInterval(id);
+  }, [scanResult]);
 
   const renderResult = () => {
     const status = scanResult?.status;
@@ -450,8 +493,11 @@ export default function Scanner() {
             onClick={handleReset}
             className="w-full rounded-lg bg-[#C5242A] px-6 py-3 text-sm font-semibold text-white hover:bg-[#A81D23]"
           >
-            Scan Next
+            Scan Next · {returnIn}s
           </button>
+          <p className="mt-3 text-xs text-slate-500">
+            Camera returns automatically in {returnIn}s
+          </p>
         </div>
       );
     }
