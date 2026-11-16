@@ -21,6 +21,7 @@ import logo from "./assets/logoEI.jpeg";
 import { API_BASE_URL, API_ROOT } from "./config";
 import PortalNav from "./PortalNav";
 import { toast } from "./toast";
+import { listTemplates } from "./templateApi";
 
 // Send Invite Modal Component
 function SendInviteModal({ employee, onClose, onSend, lockContacts = false }) {
@@ -29,8 +30,41 @@ function SendInviteModal({ employee, onClose, onSend, lockContacts = false }) {
   const [email, setEmail] = useState(employee.email || "");
   const [phone, setPhone] = useState(employee.phone || "");
   const [sending, setSending] = useState(false);
+  const [templates, setTemplates] = useState([]);
+  const [templateId, setTemplateId] = useState("");
+  const [loadingTemplates, setLoadingTemplates] = useState(true);
 
-  const canSend = (useEmail && email.trim()) || (useSms && phone.trim());
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoadingTemplates(true);
+      try {
+        const data = await listTemplates();
+        if (!cancelled) {
+          const list = Array.isArray(data) ? data : [];
+          setTemplates(list);
+          if (list.length === 1) setTemplateId(String(list[0].id));
+        }
+      } catch (err) {
+        console.error(err);
+        if (!cancelled) {
+          setTemplates([]);
+          toast.error("Failed to load templates.");
+        }
+      } finally {
+        if (!cancelled) setLoadingTemplates(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const canSend =
+    ((useEmail && email.trim()) || (useSms && phone.trim())) &&
+    Boolean(templateId) &&
+    !loadingTemplates;
 
   const handleSend = async () => {
     if (!canSend) return;
@@ -43,6 +77,7 @@ function SendInviteModal({ employee, onClose, onSend, lockContacts = false }) {
         email: useEmail ? email : "",
         phone: useSms ? phone : "",
         channels,
+        template_id: Number(templateId),
       });
     } finally {
       setSending(false);
@@ -89,6 +124,31 @@ function SendInviteModal({ employee, onClose, onSend, lockContacts = false }) {
               ? "Select delivery methods. Email and phone come from the saved record."
               : "Select delivery methods and verify contact details below before sending:"}
           </p>
+
+          <div className="mb-4">
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+              Pass template <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={templateId}
+              onChange={(e) => setTemplateId(e.target.value)}
+              disabled={loadingTemplates || templates.length === 0}
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+            >
+              <option value="">
+                {loadingTemplates
+                  ? "Loading templates..."
+                  : templates.length === 0
+                    ? "No templates available"
+                    : "Select a template"}
+              </option>
+              {templates.map((tpl) => (
+                <option key={tpl.id} value={tpl.id}>
+                  {tpl.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div
@@ -1107,6 +1167,7 @@ export default function EmployeePortal() {
           body: JSON.stringify({
             type,
             channels: details.channels,
+            template_id: details.template_id,
           }),
         }
       );
@@ -1304,6 +1365,7 @@ export default function EmployeePortal() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             channels: updatedDetails.channels,
+            template_id: updatedDetails.template_id,
           }),
         }
       );
