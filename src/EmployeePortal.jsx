@@ -14,7 +14,9 @@ import {
   MoreVertical,
   ChevronDown,
   ChevronUp,
+  Settings,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import logo from "./assets/logoEI.jpeg";
 import { API_BASE_URL, API_ROOT } from "./config";
 import PortalNav from "./PortalNav";
@@ -1541,13 +1543,23 @@ export default function EmployeePortal() {
               className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none focus:border-[#2D5A5D] focus:ring-2 focus:ring-[#2D5A5D]/20"
             />
           </div>
-          <button
-            onClick={() => setNewModalConfig({})}
-            className="flex items-center gap-2 rounded-lg bg-[#2D5A5D] px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white transition hover:bg-[#234749]"
-          >
-            <Plus size={16} />
-            <span>New Pass</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/configuration"
+              className="flex items-center justify-center rounded-lg border border-slate-200 bg-white p-2 text-slate-600 transition hover:bg-slate-50 hover:text-[#2D5A5D]"
+              aria-label="Configuration"
+              title="Configuration"
+            >
+              <Settings size={18} />
+            </Link>
+            <button
+              onClick={() => setNewModalConfig({})}
+              className="flex items-center gap-2 rounded-lg bg-[#2D5A5D] px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white transition hover:bg-[#234749]"
+            >
+              <Plus size={16} />
+              <span>New Pass</span>
+            </button>
+          </div>
         </div>
 
         {/* Mobile Search Bar */}

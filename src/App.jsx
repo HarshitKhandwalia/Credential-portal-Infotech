@@ -8,6 +8,7 @@ import ChapterDetail from "./ChapterDetail";
 import SessionDetail from "./SessionDetail";
 import { Toaster } from "./toast";
 import PaymentReport from "./PaymentReport";
+import ConfigurationPage from "./ConfigurationPage";
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
         <Route path="/wallet/apple/:token" element={<AppleWalletPage />} />
         <Route path="/wallet/google/:token" element={<GoogleWalletPage />} />
         <Route path="/chapters/:chapterId/payment-report" element={<PaymentReport />} />
+        <Route path="/configuration" element={<ConfigurationPage />} />
       </Routes>
     </BrowserRouter>
   );
