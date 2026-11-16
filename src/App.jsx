@@ -1,14 +1,10 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import EmployeePortal from "./EmployeePortal";
-import Scanner from "./Scanner";
 import AppleWalletPage from "./AppleWalletPage";
 import GoogleWalletPage from "./GoogleWalletPage";
-import Chapters from "./Chapters";
-import ChapterDetail from "./ChapterDetail";
-import SessionDetail from "./SessionDetail";
 import { Toaster } from "./toast";
-import PaymentReport from "./PaymentReport";
 import ConfigurationPage from "./ConfigurationPage";
+import ContactProfilePage from "./ContactProfilePage";
 
 export default function App() {
   return (
@@ -16,14 +12,15 @@ export default function App() {
       <Toaster />
       <Routes>
         <Route path="/" element={<EmployeePortal />} />
-        <Route path="/chapters" element={<Chapters />} />
-        <Route path="/chapters/:chapterId" element={<ChapterDetail />} />
-        <Route path="/sessions/:sessionId" element={<SessionDetail />} />
-        <Route path="/scanner" element={<Scanner />} />
+        <Route path="/configuration" element={<ConfigurationPage />} />
+        <Route path="/profile/:token" element={<ContactProfilePage />} />
         <Route path="/wallet/apple/:token" element={<AppleWalletPage />} />
         <Route path="/wallet/google/:token" element={<GoogleWalletPage />} />
-        <Route path="/chapters/:chapterId/payment-report" element={<PaymentReport />} />
-        <Route path="/configuration" element={<ConfigurationPage />} />
+        {/* Chapters / Scanner / Sessions temporarily blocked */}
+        <Route path="/chapters/*" element={<Navigate to="/" replace />} />
+        <Route path="/scanner" element={<Navigate to="/" replace />} />
+        <Route path="/sessions/*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

@@ -477,7 +477,6 @@ function ChildCredentialRow({
   const isSending = sendingKey === actionKey;
   const isDeleting = deletingKey === actionKey;
   const isBusy = isSending || isDeleting;
-  const sessionLabel = childSessionTitle(child);
   const rawSentAt =
     child.sent_at ||
     child.sentAt ||
@@ -501,12 +500,8 @@ function ChildCredentialRow({
         </span>
         {displayName}
       </td>
-      <td className="px-3 py-2.5" title={sessionLabel}>
-        {sessionLabel}
-      </td>
       <td className="px-3 py-2.5">{child.phone || "N/A"}</td>
       <td className="px-3 py-2.5">{child.email || "N/A"}</td>
-      <td className="px-3 py-2.5">{child.primary_credential || "QR"}</td>
       <td className="px-3 py-2.5" title={sentAtDisplay}>
         {sentAtDisplay}
       </td>
@@ -549,12 +544,11 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [membershipId, setMembershipId] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [chapter, setChapter] = useState(
-    isVisitorOrSubstitute && lockedChapterId != null ? String(lockedChapterId) : ""
-  );
+  const [company, setCompany] = useState("");
+  const [linkedin, setLinkedin] = useState("");
+  const [website, setWebsite] = useState("");
   const [sessionId, setSessionId] = useState("");
   const [sessions, setSessions] = useState([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
@@ -631,8 +625,7 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
       !loadingSessions
     : firstName.trim() !== "" &&
       lastName.trim() !== "" &&
-      hasContactMethod &&
-      chapter !== "";
+      hasContactMethod;
 
   const handleEmailChange = (e) => {
     setEmail(e.target.value);
@@ -677,17 +670,11 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
         );
         return;
       }
-    } else if (!chapter) {
-      setValidationError("Please select a chapter.");
-      return;
     }
 
     setSubmitting(true);
     setValidationError("");
 
-    const selectedChapterObj = chapters.find(
-      (c) => String(c.id) === String(isVisitorOrSubstitute ? lockedChapterId : chapter)
-    );
     const selectedSession = sessions.find(
       (s) => String(s.id) === String(sessionId)
     );
@@ -697,17 +684,16 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         name: `${firstName.trim()} ${lastName.trim()}`,
-        membershipId: isVisitorOrSubstitute ? "" : membershipId.trim(),
+        membershipId: "",
         email: emailTrimmed,
         phone: phoneTrimmed,
+        company: company.trim(),
+        linkedin: linkedin.trim(),
+        website: website.trim(),
         primaryCredential: "QR",
         secondaryCredential: "Email",
-        chapter: Number(isVisitorOrSubstitute ? lockedChapterId : chapter),
-        chapter_name: isVisitorOrSubstitute
-          ? lockedChapterLabel
-          : selectedChapterObj
-            ? selectedChapterObj.name
-            : "",
+        chapter: isVisitorOrSubstitute ? Number(lockedChapterId) : null,
+        chapter_name: isVisitorOrSubstitute ? lockedChapterLabel : "",
         parentUserId,
         entryType,
         sessionId: isVisitorOrSubstitute ? Number(sessionId) : undefined,
@@ -794,83 +780,48 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
             </div>
           </div>
 
-          {!isVisitorOrSubstitute && (
-            <div className="mt-4">
-              <label className="mb-1 block text-sm font-medium text-slate-700">
-                Membership ID
-              </label>
-              <input
-                type="text"
-                value={membershipId}
-                onChange={(e) => {
-                  setMembershipId(e.target.value);
-                  setValidationError("");
-                }}
-                placeholder="MEM-67890"
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
-              />
-            </div>
-          )}
-
-          <div className="mt-4">
-            <label className="mb-1 block text-sm font-medium text-slate-700">
-              Chapter <span className="text-red-500">*</span>
-            </label>
-            {isVisitorOrSubstitute ? (
-              <input
-                type="text"
-                value={lockedChapterLabel}
-                readOnly
-                disabled
-                className="w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-500 outline-none"
-              />
-            ) : (
-              <select
-                value={chapter}
-                onChange={(e) => {
-                  setChapter(e.target.value);
-                  setValidationError("");
-                }}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
-              >
-                <option value="">Select chapter</option>
-                {chapters.map((ch) => (
-                  <option key={ch.id} value={ch.id}>
-                    {ch.name}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-
           {isVisitorOrSubstitute && (
-            <div className="mt-4">
-              <label className="mb-1 block text-sm font-medium text-slate-700">
-                Session <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={sessionId}
-                onChange={(e) => {
-                  setSessionId(e.target.value);
-                  setValidationError("");
-                }}
-                disabled={loadingSessions || sessions.length === 0}
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-              >
-                <option value="">
-                  {loadingSessions
-                    ? "Loading sessions..."
-                    : sessions.length === 0
-                      ? "No upcoming scheduled sessions"
-                      : "Select session"}
-                </option>
-                {sessions.map((session) => (
-                  <option key={session.id} value={session.id}>
-                    {formatSessionOptionLabel(session)}
+            <>
+              <div className="mt-4">
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Chapter
+                </label>
+                <input
+                  type="text"
+                  value={lockedChapterLabel}
+                  readOnly
+                  disabled
+                  className="w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-500 outline-none"
+                />
+              </div>
+              <div className="mt-4">
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Session <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={sessionId}
+                  onChange={(e) => {
+                    setSessionId(e.target.value);
+                    setValidationError("");
+                  }}
+                  disabled={loadingSessions || sessions.length === 0}
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  <option value="">
+                    {loadingSessions
+                      ? "Loading sessions..."
+                      : sessions.length === 0
+                        ? "No upcoming scheduled sessions"
+                        : "Select session"}
                   </option>
-                ))}
-              </select>
-            </div>
+                  {sessions.map((session) => (
+                    <option key={session.id} value={session.id}>
+                      {formatSessionOptionLabel(session)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
           )}
 
           <div className="mt-4">
@@ -916,18 +867,55 @@ function NewEmployeeModal({ modalConfig, chapters, onClose, onAdd }) {
           </div>
 
           {!isVisitorOrSubstitute && (
-            <div className="mt-4">
-              <label className="mb-1 block text-sm font-medium text-slate-700">
-                Pass Type
-              </label>
-              <select
-                disabled
-                value="QR"
-                className="w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-500 outline-none"
-              >
-                <option value="QR">QR</option>
-              </select>
-            </div>
+            <>
+              <div className="mt-4">
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Company
+                </label>
+                <input
+                  type="text"
+                  value={company}
+                  onChange={(e) => {
+                    setCompany(e.target.value);
+                    setValidationError("");
+                  }}
+                  placeholder="Company name"
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+                />
+              </div>
+
+              <div className="mt-4">
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  LinkedIn
+                </label>
+                <input
+                  type="url"
+                  value={linkedin}
+                  onChange={(e) => {
+                    setLinkedin(e.target.value);
+                    setValidationError("");
+                  }}
+                  placeholder="https://linkedin.com/in/username"
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+                />
+              </div>
+
+              <div className="mt-4">
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  Website
+                </label>
+                <input
+                  type="url"
+                  value={website}
+                  onChange={(e) => {
+                    setWebsite(e.target.value);
+                    setValidationError("");
+                  }}
+                  placeholder="https://example.com"
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#2D5A5D] focus:bg-white focus:ring-2 focus:ring-[#2D5A5D]/20"
+                />
+              </div>
+            </>
           )}
         </div>
 
@@ -1441,11 +1429,16 @@ export default function EmployeePortal() {
       membership_id: (formData.membershipId || "").trim(),
       email: formData.email || null,
       phone: formData.phone || null,
+      company_name: (formData.company || "").trim() || null,
+      linkedin_url: (formData.linkedin || "").trim() || null,
+      website_url: (formData.website || "").trim() || null,
       primary_credential: formData.primaryCredential || "QR",
       secondary_credential: formData.secondaryCredential || "Email",
       status: "not_invited",
-      chapter: formData.chapter,
     };
+    if (formData.chapter != null && formData.chapter !== "") {
+      payload.chapter = formData.chapter;
+    }
 
     const response = await fetch(API_BASE_URL, {
       method: "POST",
@@ -1544,6 +1537,13 @@ export default function EmployeePortal() {
             />
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setNewModalConfig({})}
+              className="flex items-center gap-2 rounded-lg bg-[#2D5A5D] px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white transition hover:bg-[#234749]"
+            >
+              <Plus size={16} />
+              <span>New Pass</span>
+            </button>
             <Link
               to="/configuration"
               className="flex items-center justify-center rounded-lg border border-slate-200 bg-white p-2 text-slate-600 transition hover:bg-slate-50 hover:text-[#2D5A5D]"
@@ -1552,13 +1552,6 @@ export default function EmployeePortal() {
             >
               <Settings size={18} />
             </Link>
-            <button
-              onClick={() => setNewModalConfig({})}
-              className="flex items-center gap-2 rounded-lg bg-[#2D5A5D] px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white transition hover:bg-[#234749]"
-            >
-              <Plus size={16} />
-              <span>New Pass</span>
-            </button>
           </div>
         </div>
 
@@ -1601,10 +1594,8 @@ export default function EmployeePortal() {
               <thead className="bg-slate-50 text-xs uppercase text-slate-500 border-b border-slate-200">
                 <tr>
                   <th className="px-3 py-3.5 font-semibold">User</th>
-                  <th className="px-3 py-3.5 font-semibold">Chapter</th>
                   <th className="px-3 py-3.5 font-semibold">Phone</th>
                   <th className="px-3 py-3.5 font-semibold">Email</th>
-                  <th className="px-3 py-3.5 font-semibold">Type</th>
                   <th className="px-3 py-3.5 font-semibold">Sent At</th>
                   <th className="px-3 py-3.5 font-semibold text-right">Actions</th>
                 </tr>
@@ -1664,14 +1655,6 @@ export default function EmployeePortal() {
                           </div>
                         </td>
                         <td
-                          className="px-3 py-3.5 text-slate-600 truncate"
-                          title={
-                            employee.chapter_name || employee.chapter || "N/A"
-                          }
-                        >
-                          {employee.chapter_name || employee.chapter || "N/A"}
-                        </td>
-                        <td
                           className="px-3 py-3.5 text-slate-500 truncate"
                           title={employee.phone || "N/A"}
                         >
@@ -1682,11 +1665,6 @@ export default function EmployeePortal() {
                           title={employee.email || "N/A"}
                         >
                           {employee.email || "N/A"}
-                        </td>
-                        <td className="px-3 py-3.5 truncate">
-                          {employee.primary_credential ||
-                            employee.primaryCredential ||
-                            "QR"}
                         </td>
                         <td
                           className="px-3 py-3.5 text-slate-500 truncate"
@@ -1726,46 +1704,6 @@ export default function EmployeePortal() {
 
                               {openMenuId === employee.id && (
                                 <div className="absolute right-0 top-full z-20 mt-1 w-36 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
-                                  <button
-                                    onClick={() => {
-                                      setNewModalConfig({
-                                        parentUserId: employee.id,
-                                        entryType: "visitor",
-                                        chapterId: employee.chapter,
-                                        chapterName:
-                                          employee.chapter_name || "",
-                                      });
-                                      setOpenMenuId(null);
-                                    }}
-                                    className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50"
-                                  >
-                                    <UserPlus size={13} /> Visitor
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setNewModalConfig({
-                                        parentUserId: employee.id,
-                                        entryType: "substitute",
-                                        chapterId: employee.chapter,
-                                        chapterName:
-                                          employee.chapter_name || "",
-                                      });
-                                      setOpenMenuId(null);
-                                    }}
-                                    className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50"
-                                  >
-                                    <UserPlus size={13} /> Substitute
-                                  </button>
-                                  <div className="my-1 border-t border-slate-100" />
-                                  <button
-                                    onClick={() => {
-                                      handleMarkPaid(employee);
-                                      setOpenMenuId(null);
-                                    }}
-                                    className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-emerald-600 hover:bg-emerald-50"
-                                  >
-                                    <CheckCircle2 size={13} /> Mark Paid
-                                  </button>
                                   <button
                                     onClick={() => {
                                       setEditingEmployee(employee);

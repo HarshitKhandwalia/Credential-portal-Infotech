@@ -1,12 +1,13 @@
 import { NavLink } from "react-router-dom";
 
 const links = [
-  { to: "/", label: "Users", end: true },
-  { to: "/chapters", label: "Chapters" },
-  { to: "/scanner", label: "Scanner" },
+  // Users is the homepage — no nav item needed
+  // Chapters & Scanner hidden for now
 ];
 
 export default function PortalNav() {
+  if (links.length === 0) return null;
+
   return (
     <nav className="flex items-center gap-1">
       {links.map(({ to, label, end }) => (

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Edit, Plus, Settings, Trash2 } from "lucide-react";
+import { ArrowLeft, Edit, Plus, Settings, Trash2 } from "lucide-react";
 import logo from "./assets/logoEI.jpeg";
 import PortalNav from "./PortalNav";
 import TemplateForm from "./TemplateForm";
@@ -132,15 +132,24 @@ export default function ConfigurationPage() {
             </Link>
             <PortalNav />
           </div>
-          {view === "list" && (
-            <button
-              onClick={openCreate}
-              className="flex items-center gap-2 rounded-lg bg-[#2D5A5D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#234749]"
+          <div className="flex items-center gap-2">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-[#2D5A5D]"
             >
-              <Plus size={16} />
-              Create template
-            </button>
-          )}
+              <ArrowLeft size={16} />
+              Back
+            </Link>
+            {view === "list" && (
+              <button
+                onClick={openCreate}
+                className="flex items-center gap-2 rounded-lg bg-[#2D5A5D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#234749]"
+              >
+                <Plus size={16} />
+                Create template
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
